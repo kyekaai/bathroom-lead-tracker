@@ -15,7 +15,6 @@ export default function Calendar() {
     if (l.next_chase_date) tasks.push({ date: l.next_chase_date, what: 'Chase selection form', lead: l, color: 'amber' })
     if (l.next_quote_chase_date) tasks.push({ date: l.next_quote_chase_date, what: 'Follow up quote', lead: l, color: 'amber' })
     if (l.cad_booked_date && ['booked', 'in progress'].includes(l.cad_status)) tasks.push({ date: l.cad_booked_date, what: `CAD appointment${l.cad_designer ? ` — ${l.cad_designer}` : ''}`, lead: l, color: 'blue' })
-    if (l.survey_booked_date && !l.survey_completed) tasks.push({ date: l.survey_booked_date, what: `Survey${l.surveyor ? ` — ${l.surveyor}` : ''}`, lead: l, color: 'blue' })
   }
 
   const t = today()
@@ -49,7 +48,7 @@ export default function Calendar() {
 
       {overdue.length > 0 && (
         <div className="agenda-day">
-          <h3 style={{ color: 'var(--red)' }}>⚠ Overdue ({overdue.length})</h3>
+          <h3 style={{ color: 'var(--stage-lost)' }}>⚠ Overdue ({overdue.length})</h3>
           {overdue.map((x, i) => <Task key={i} x={x} overdue />)}
         </div>
       )}
@@ -66,7 +65,7 @@ export default function Calendar() {
         </div>
       ))}
 
-      {tasks.length === 0 && <div className="card"><Empty title="No scheduled tasks">Set follow-up dates, CAD bookings and survey dates on leads and they'll show here automatically.</Empty></div>}
+      {tasks.length === 0 && <div className="card"><Empty title="No scheduled tasks">Set follow-up dates and CAD bookings on leads and they'll show here automatically.</Empty></div>}
     </>
   )
 }

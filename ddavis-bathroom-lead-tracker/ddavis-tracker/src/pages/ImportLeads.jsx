@@ -49,9 +49,9 @@ export default function ImportLeads() {
       }
       if (out.estimated_value) out.estimated_value = Number(String(out.estimated_value).replace(/[£,]/g, '')) || null
       if (out.estimated_profit) out.estimated_profit = Number(String(out.estimated_profit).replace(/[£,]/g, '')) || null
-      if (out.survey_booked_date) {
-        const d = parseUkDate(out.survey_booked_date)
-        out.survey_booked_date = d || null
+      if (out.survey_completed_date) {
+        const d = parseUkDate(out.survey_completed_date)
+        out.survey_completed_date = d || null
       }
       return out
     }
@@ -96,7 +96,7 @@ export default function ImportLeads() {
 
     for (const row of toInsert) {
       const { data, error } = await supabase.from('leads')
-        .insert({ ...row, import_id: importId, created_by: profile?.id }).select('id').single()
+        .insert({ ...row, stage: 'Survey Complete', survey_completed: true, import_id: importId, created_by: profile?.id }).select('id').single()
       if (error) errorRows.push({ line: '-', reason: `${row.customer_name}: ${error.message}` })
       else { imported++; await logActivity(data.id, 'import', `Imported from CSV: ${fileName}`, profile?.name) }
     }

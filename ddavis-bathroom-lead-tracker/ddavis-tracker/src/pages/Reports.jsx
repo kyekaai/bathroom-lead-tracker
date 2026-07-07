@@ -7,8 +7,8 @@ import {
   PieChart, Pie, Cell, LineChart, Line, Legend,
 } from 'recharts'
 
-const GOLD = '#c7a24a', GREEN = '#178a52', RED = '#c73a2e', BLUE = '#2760d8', GREY = '#8b8f98', AMBER = '#d98a10'
-const PIE = [GOLD, BLUE, GREEN, AMBER, RED, GREY, '#7c4bc7', '#1a9e9e']
+const GOLD = '#f3ab2d', GREEN = '#34d399', RED = '#f87171', BLUE = '#4f9dff', GREY = '#9a9aa4', AMBER = '#f3ab2d', PURPLE = '#b98bff'
+const PIE = [GOLD, BLUE, GREEN, PURPLE, RED, GREY, '#7dd3fc', '#fda4af']
 
 export default function Reports() {
   const { leads } = useApp()
@@ -136,7 +136,7 @@ export default function Reports() {
           <div className="card-body" style={{ height: 240 }}>
             <ResponsiveContainer>
               <BarChart data={[{ name: range === 'all' ? 'All time' : `Last ${range}`, Won: won.length, Lost: lost.length }]}>
-                <CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="name" /><YAxis allowDecimals={false} /><Tooltip /><Legend />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.07)" /><XAxis dataKey="name" /><YAxis allowDecimals={false} /><Tooltip /><Legend />
                 <Bar dataKey="Won" fill={GREEN} radius={[6, 6, 0, 0]} /><Bar dataKey="Lost" fill={RED} radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -146,7 +146,7 @@ export default function Reports() {
           <div className="card-body" style={{ height: 240 }}>
             <ResponsiveContainer>
               <LineChart data={monthly}>
-                <CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="label" /><YAxis tickFormatter={v => '£' + (v / 1000) + 'k'} />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.07)" /><XAxis dataKey="label" /><YAxis tickFormatter={v => '£' + (v / 1000) + 'k'} />
                 <Tooltip formatter={v => money(v)} />
                 <Line type="monotone" dataKey="revenue" stroke={GOLD} strokeWidth={2.5} dot />
               </LineChart>

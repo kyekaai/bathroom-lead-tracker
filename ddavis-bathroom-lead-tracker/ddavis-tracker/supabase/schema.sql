@@ -47,12 +47,11 @@ create table if not exists public.leads (
   bathroom_type text,
 
   -- Pipeline
-  stage text not null default 'New Lead',
+  stage text not null default 'Survey Complete',
   next_action_override text,
 
   -- Survey
-  survey_booked_date date,
-  survey_completed boolean not null default false,
+  survey_completed boolean not null default true,
   survey_completed_date date,
   surveyor text,
   brochures_handed boolean not null default false,

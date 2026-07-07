@@ -19,8 +19,18 @@ export function Stat({ n, label, tone = '' }) {
   )
 }
 
-export function Empty({ title, children }) {
-  return <div className="empty"><b>{title}</b>{children}</div>
+export function Empty({ title, children, icon = '📋', cta, ctaTo }) {
+  return (
+    <div className="empty">
+      <span className="empty-icon" aria-hidden>{icon}</span>
+      <b>{title}</b>{children}
+      {cta && <div><LinkBtn to={ctaTo}>{cta}</LinkBtn></div>}
+    </div>
+  )
+}
+function LinkBtn({ to, children }) {
+  const nav = useNavigate()
+  return <button className="btn gold" onClick={() => nav(to)}>{children}</button>
 }
 
 export function LeadCard({ lead }) {
@@ -43,7 +53,7 @@ export function LeadCard({ lead }) {
       </div>
       <div className="action"><b>Next action</b>{d.nextAction}</div>
       <div className="foot">
-        <span>{d.dSurvey !== null ? `${d.dSurvey}d since survey` : lead.survey_booked_date ? `Survey ${fmtDate(lead.survey_booked_date)}` : 'No survey booked'}</span>
+        <span>{d.dSurvey !== null ? `${d.dSurvey}d since survey` : 'No survey date'}</span>
         <span>{money(lead.quote_value ?? lead.estimated_value)}</span>
       </div>
     </div>

@@ -16,6 +16,7 @@ import Quotes from './pages/Quotes'
 import Calendar from './pages/Calendar'
 import Reports from './pages/Reports'
 import Settings from './pages/Settings'
+import WhatsNew from './pages/WhatsNew'
 import Users from './pages/Users'
 
 // ---------------- global app context: session, profile, live leads ----------------
@@ -46,6 +47,8 @@ function AppProvider({ session, children }) {
     // Live updates: any change to leads by any team member refreshes everyone.
     const ch = supabase.channel('live-leads')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, refresh)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'follow_ups' }, refresh)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'activity' }, refresh)
       .subscribe()
     return () => supabase.removeChannel(ch)
   }, [session.user.id, refresh])
@@ -75,6 +78,7 @@ const NAV = [
   { to: '/import', icon: '↥', label: 'Import CRM Leads' },
   { to: '/import/history', icon: '↺', label: 'Import History' },
   { to: '/reports', icon: '◔', label: 'Reports' },
+  { to: '/whats-new', icon: '★', label: "What's New" },
   { group: 'Admin' },
   { to: '/settings', icon: '⚙', label: 'Settings' },
   { to: '/users', icon: '👥', label: 'User Management' },
@@ -116,7 +120,26 @@ function Layout({ children }) {
         </div>
       </aside>
       <main className="main">{children}</main>
-      <button className="menu-btn" onClick={() => setOpen(true)} aria-label="Open menu">☰ Menu</button>
+
+      {/* Mobile bottom tab bar — 4 main destinations + More (full menu) */}
+      <nav className="tabbar" aria-label="Main">
+        <NavLink to="/" end className={({ isActive }) => `tab ${isActive ? 'on' : ''}`}>
+          <span className="t-icon">▦</span>Home
+        </NavLink>
+        <NavLink to="/leads" end className={({ isActive }) => `tab ${isActive ? 'on' : ''}`}>
+          <span className="t-icon">👥</span>Leads
+        </NavLink>
+        <NavLink to="/leads/new" className="tab add" aria-label="Add lead">
+          <span className="add-btn">＋</span>Add
+        </NavLink>
+        <NavLink to="/cad" className={({ isActive }) => `tab ${isActive ? 'on' : ''}`}>
+          <span className="t-icon">📐</span>CAD
+        </NavLink>
+        <button className={`tab ${open ? 'on' : ''}`} onClick={() => setOpen(true)}>
+          <span className="t-icon">☰</span>More
+          {actionCount > 0 && <span className="tab-dot" />}
+        </button>
+      </nav>
     </div>
   )
 }
@@ -150,6 +173,7 @@ export default function App() {
             <Route path="/quotes" element={<Quotes />} />
             <Route path="/calendar" element={<Calendar />} />
             <Route path="/reports" element={<Reports />} />
+            <Route path="/whats-new" element={<WhatsNew />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/users" element={<Users />} />
             <Route path="*" element={<Navigate to="/" replace />} />

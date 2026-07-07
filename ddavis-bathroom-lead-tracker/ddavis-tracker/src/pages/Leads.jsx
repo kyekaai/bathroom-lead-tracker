@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useApp } from '../App'
 import { LeadCard, StageBadge, PriorityBadge, Empty } from '../components/ui'
-import { STAGES, BATHROOM_TYPES, LEAD_SOURCES, derive, fmtDate, money } from '../lib/logic'
+import { STAGES, BATHROOM_TYPES, LEAD_SOURCES, STAGE_GROUPS, derive, fmtDate, money } from '../lib/logic'
 
 export default function Leads() {
   const { leads, loading } = useApp()
@@ -27,6 +27,7 @@ export default function Leads() {
       if (!hay.includes(q.toLowerCase())) return false
     }
     if (f('stage') && lead.stage !== f('stage')) return false
+    if (f('group') && !(STAGE_GROUPS[f('group')] || []).includes(lead.stage)) return false
     if (f('surveyor') && lead.surveyor !== f('surveyor')) return false
     if (f('designer') && lead.cad_designer !== f('designer')) return false
     if (f('source') && lead.lead_source !== f('source')) return false
@@ -93,7 +94,7 @@ export default function Leads() {
         </div>
       </div>
 
-      {filtered.length === 0 && <div className="card"><Empty title="No leads match">Try clearing a filter, or add a new lead.</Empty></div>}
+      {filtered.length === 0 && <div className="card"><Empty title="No leads yet" cta="＋ Add Lead" ctaTo="/leads/new">Try clearing a filter, import from your CRM, or add a lead.</Empty></div>}
 
       {view === 'cards' && (
         <div className="lead-cards">{filtered.map(({ lead }) => <LeadCard key={lead.id} lead={lead} />)}</div>
@@ -112,7 +113,7 @@ export default function Leads() {
                   <td><b>{lead.customer_name}</b><div className="muted small">{lead.postcode || ''} · {lead.lead_source || '—'} · {lead.bathroom_type || '—'}</div></td>
                   <td className="small">{lead.phone || '—'}<div className="muted">{lead.email || ''}</div></td>
                   <td><StageBadge stage={lead.stage} /></td>
-                  <td className="small">{fmtDate(lead.survey_completed_date || lead.survey_booked_date)}</td>
+                  <td className="small">{fmtDate(lead.survey_completed_date)}</td>
                   <td className="small">{lead.surveyor || '—'}</td>
                   <td className="small">{d.nextAction}</td>
                   <td><PriorityBadge priority={d.priority} /></td>

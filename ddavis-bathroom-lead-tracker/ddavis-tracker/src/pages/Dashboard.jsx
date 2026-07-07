@@ -1,36 +1,87 @@
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import { useApp } from '../App'
-import { Stat, StageBadge, PriorityBadge } from '../components/ui'
+import { Stat, StageBadge } from '../components/ui'
 import { buildTodaysActions, derive, money, fmtDate } from '../lib/logic'
+
+// Pipeline groups — colours mean the same thing everywhere
+const GROUPS = [
+  { key: 'new', label: 'Chasing Form', color: 'var(--stage-new)', stages: ['Survey Complete', 'Awaiting Selection Form', 'Selection Form Received'] },
+  { key: 'cad', label: 'CAD Design', color: 'var(--stage-contact)', stages: ['CAD Required', 'CAD Booked', 'CAD In Progress', 'CAD Sent', 'CAD Revisions Required', 'CAD Approved'] },
+  { key: 'quoted', label: 'Quoted', color: 'var(--stage-quoted)', stages: ['Quote Sent', 'Quote Follow Up'] },
+  { key: 'won', label: 'Won', color: 'var(--stage-won)', stages: ['Won'] },
+]
+
+// Count-up animation for the hero number (~700ms, respects reduced motion)
+function useCountUp(target) {
+  const [n, setN] = useState(0)
+  const done = useRef(false)
+  useEffect(() => {
+    if (done.current) { setN(target); return }
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) { setN(target); done.current = true; return }
+    done.current = true
+    const t0 = performance.now()
+    let raf
+    const tick = now => {
+      const p = Math.min(1, (now - t0) / 700)
+      setN(Math.round(target * (1 - Math.pow(1 - p, 3))))
+      if (p < 1) raf = requestAnimationFrame(tick)
+    }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [target])
+  return n
+}
 
 export default function Dashboard() {
   const { leads, loading, profile } = useApp()
-  if (loading) return <p className="muted">Loading live data…</p>
 
   const active = leads.filter(l => l.stage !== 'Won' && l.stage !== 'Lost')
   const won = leads.filter(l => l.stage === 'Won')
   const lost = leads.filter(l => l.stage === 'Lost')
-  const is = s => leads.filter(l => l.stage === s).length
 
-  const surveysBooked = leads.filter(l => l.survey_booked_date && !l.survey_completed).length
-  const surveysDone = leads.filter(l => l.survey_completed).length
-  const awaitingForms = leads.filter(l => l.survey_completed && !l.selection_form_returned && l.stage !== 'Won' && l.stage !== 'Lost').length
-  const formsBack = leads.filter(l => l.selection_form_returned).length
-  const cadRequired = leads.filter(l => l.cad_required === 'yes' && ['not booked'].includes(l.cad_status)).length
+  const pipeline = active.reduce((s, l) => s + Number(l.quote_value ?? l.estimated_value ?? 0), 0)
+  const animated = useCountUp(pipeline)
+  if (loading) return <p className="muted">Loading live data…</p>
+
+  const awaitingForms = active.filter(l => l.survey_completed && !l.selection_form_returned).length
   const cadInProgress = leads.filter(l => ['booked', 'in progress', 'revisions requested'].includes(l.cad_status)).length
-  const cadDone = leads.filter(l => ['approved', 'sent to customer'].includes(l.cad_status)).length
-  const quotesSent = leads.filter(l => l.quote_sent).length
   const quotesChase = leads.filter(l => derive(l).flags.followUpQuote).length
-
   const decided = won.length + lost.length
   const convRate = decided ? Math.round(won.length / decided * 100) : 0
-  const pipeline = active.reduce((s, l) => s + Number(l.quote_value ?? l.estimated_value ?? 0), 0)
   const wonRev = won.reduce((s, l) => s + Number(l.quote_value ?? l.estimated_value ?? 0), 0)
   const profit = won.reduce((s, l) => s + Number(l.estimated_profit ?? 0), 0)
 
+  // Trend: new leads this month vs last month
+  const ym = d => (d || '').slice(0, 7)
+  const now = new Date()
+  const thisM = now.toISOString().slice(0, 7)
+  const lastM = new Date(now.getFullYear(), now.getMonth() - 1, 15).toISOString().slice(0, 7)
+  const nThis = leads.filter(l => ym(l.created_at) === thisM).length
+  const nLast = leads.filter(l => ym(l.created_at) === lastM).length
+  const trendPct = nLast ? Math.round(((nThis - nLast) / nLast) * 100) : null
+
+  // 30-day leads-over-time series
+  const series = []
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date(); d.setDate(d.getDate() - i)
+    const key = d.toISOString().slice(0, 10)
+    series.push({
+      day: d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
+      leads: leads.filter(l => (l.created_at || '').slice(0, 10) === key).length,
+    })
+  }
+
+  // Pipeline groups with count + value
+  const groups = GROUPS.map(g => {
+    const rows = leads.filter(l => g.stages.includes(l.stage))
+    return { ...g, n: rows.length, value: rows.reduce((s, l) => s + Number(l.quote_value ?? l.estimated_value ?? 0), 0) }
+  })
+  const maxN = Math.max(1, ...groups.map(g => g.n))
+
   const buckets = buildTodaysActions(leads)
   const totalActions = buckets.reduce((n, b) => n + b.items.length, 0)
-
   const recent = [...leads].sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at)).slice(0, 6)
 
   return (
@@ -43,14 +94,45 @@ export default function Dashboard() {
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <Link to="/import" className="btn ghost">↥ Import CRM Leads</Link>
-          <Link to="/leads/new" className="btn gold">＋ Add New Lead</Link>
+          <Link to="/leads/new" className="btn gold">＋ Add Lead</Link>
         </div>
       </div>
 
+      {/* HERO metric + supporting stats */}
+      <div className="hero-grid">
+        <div className="hero">
+          <div className="hero-label">Total pipeline value</div>
+          <div className="hero-row">
+            <div className="hero-num">{money(animated)}</div>
+            {trendPct !== null && (
+              <span className={`trend ${trendPct >= 0 ? 'up' : 'down'}`}>
+                {trendPct >= 0 ? '▲' : '▼'} {Math.abs(trendPct)}% vs last month
+              </span>
+            )}
+          </div>
+          <div className="hero-sub">{active.length} active leads · {nThis} new this month</div>
+        </div>
+        <Stat n={awaitingForms} label="Awaiting selection forms" tone="blue" />
+        <Stat n={cadInProgress} label="CAD in progress" tone="purple" />
+        <Stat n={quotesChase} label="Quotes to follow up" tone="gold" />
+        <Stat n={`${convRate}%`} label="Conversion rate" tone="green" />
+      </div>
+
+      {/* PIPELINE — segmented funnel bar */}
+      <div className="pipebar">
+        {groups.map(g => (
+          <Link key={g.key} className="seg-wrap" to={g.key === 'won' ? '/leads?stage=Won' : `/leads?group=${g.key}`}>
+            <div className="seg-bar" style={{ background: g.color, opacity: 0.25 + 0.75 * (g.n / maxN) }} />
+            <div className="seg-name" style={{ color: g.color }}>{g.label}</div>
+            <div className="seg-meta">{g.n} · {money(g.value)}</div>
+          </Link>
+        ))}
+      </div>
+
       {/* TODAY'S ACTIONS — the most important part */}
-      <div className="card" style={{ marginBottom: 18 }}>
+      <div className="card" style={{ marginBottom: 24 }}>
         <div className="card-head">
-          <h2>⚑ Today's Actions {totalActions > 0 && <span className="badge red" style={{ marginLeft: 8 }}>{totalActions} need attention</span>}</h2>
+          <h2>Today's Actions {totalActions > 0 && <span className="badge red" style={{ marginLeft: 8 }}>{totalActions} need attention</span>}</h2>
           <Link to="/actions" className="btn sm ghost">View all</Link>
         </div>
         <div className="card-body">
@@ -72,49 +154,37 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* KPI grid */}
-      <div className="grid stats-grid" style={{ marginBottom: 18 }}>
-        <Stat n={active.length} label="Active bathroom leads" />
-        <Stat n={surveysBooked} label="Surveys booked" tone="blue" />
-        <Stat n={surveysDone} label="Surveys completed" tone="green" />
-        <Stat n={awaitingForms} label="Awaiting selection forms" tone="amber" />
-        <Stat n={formsBack} label="Selection forms returned" tone="green" />
-        <Stat n={cadRequired} label="CAD designs required" tone="amber" />
-        <Stat n={cadInProgress} label="CAD in progress" tone="blue" />
-        <Stat n={cadDone} label="CAD completed / sent" tone="green" />
-        <Stat n={quotesSent} label="Quotes sent" tone="blue" />
-        <Stat n={quotesChase} label="Quotes needing follow-up" tone="amber" />
-        <Stat n={won.length} label="Jobs won" tone="green" />
-        <Stat n={lost.length} label="Jobs lost" tone="red" />
-        <Stat n={`${convRate}%`} label="Conversion rate (won vs decided)" tone="gold" />
-        <Stat n={money(pipeline)} label="Total pipeline value" tone="gold" />
-        <Stat n={money(wonRev)} label="Won revenue" tone="green" />
-        <Stat n={money(profit)} label="Estimated profit (won)" tone="green" />
-      </div>
-
-      <div className="grid two-col">
+      <div className="grid two-col" style={{ marginBottom: 24 }}>
+        {/* CHART — leads over the last 30 days */}
         <div className="card">
-          <div className="card-head"><h2>Pipeline by stage</h2><Link className="btn sm ghost" to="/leads">All leads</Link></div>
-          <div className="card-body">
-            {['New Lead','Survey Booked','Survey Complete','Awaiting Selection Form','Selection Form Received','CAD Required','CAD Booked','CAD In Progress','CAD Sent','CAD Revisions Required','CAD Approved','Quote Sent','Quote Follow Up'].map(s => {
-              const n = is(s); if (!n) return null
-              return (
-                <Link key={s} to={`/leads?stage=${encodeURIComponent(s)}`} className="spread" style={{ padding: '7px 0', textDecoration: 'none', borderBottom: '1px solid var(--line)' }}>
-                  <StageBadge stage={s} /><b>{n}</b>
-                </Link>
-              )
-            })}
-            {active.length === 0 && <p className="muted">No active leads yet — import from your CRM or add one manually.</p>}
+          <div className="card-head"><h2>New leads — last 30 days</h2></div>
+          <div className="card-body" style={{ paddingBottom: 16 }}>
+            <ResponsiveContainer width="100%" height={180}>
+              <AreaChart data={series} margin={{ top: 4, right: 4, left: -28, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="heroFill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#f3ab2d" stopOpacity={0.35} />
+                    <stop offset="100%" stopColor="#f3ab2d" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <XAxis dataKey="day" interval={6} tickLine={false} axisLine={false} />
+                <YAxis allowDecimals={false} tickLine={false} axisLine={false} />
+                <Tooltip cursor={{ stroke: 'rgba(255,255,255,0.12)' }}
+                  contentStyle={{ background: '#1c1c22', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, color: '#f4f4f6' }} />
+                <Area type="monotone" dataKey="leads" stroke="#f3ab2d" strokeWidth={2} fill="url(#heroFill)" />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
         </div>
 
+        {/* Recently updated */}
         <div className="card">
-          <div className="card-head"><h2>Recently updated</h2></div>
+          <div className="card-head"><h2>Recently updated</h2><Link className="btn sm ghost" to="/leads">All leads</Link></div>
           <div className="card-body" style={{ paddingTop: 8 }}>
             {recent.map(l => {
               const d = derive(l)
               return (
-                <Link key={l.id} to={`/leads/${l.id}`} className="spread" style={{ padding: '9px 0', textDecoration: 'none', borderBottom: '1px solid var(--line)' }}>
+                <Link key={l.id} to={`/leads/${l.id}`} className="spread" style={{ padding: '10px 0', textDecoration: 'none', borderBottom: '1px solid var(--border)' }}>
                   <div>
                     <b style={{ fontSize: 13.5 }}>{l.customer_name}</b>
                     <div className="muted small">{d.nextAction}</div>
@@ -129,6 +199,14 @@ export default function Dashboard() {
             {recent.length === 0 && <p className="muted">Nothing here yet.</p>}
           </div>
         </div>
+      </div>
+
+      {/* Won / lost / money summary */}
+      <div className="grid stats-grid">
+        <Stat n={won.length} label="Jobs won" tone="green" />
+        <Stat n={lost.length} label="Jobs lost" tone="red" />
+        <Stat n={money(wonRev)} label="Won revenue" tone="green" />
+        <Stat n={money(profit)} label="Estimated profit (won)" tone="green" />
       </div>
     </>
   )

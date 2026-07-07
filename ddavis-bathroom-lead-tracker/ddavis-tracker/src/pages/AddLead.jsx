@@ -6,7 +6,7 @@ import { BATHROOM_TYPES, LEAD_SOURCES } from '../lib/logic'
 
 const BLANK = {
   customer_name: '', address: '', postcode: '', phone: '', email: '',
-  lead_source: '', bathroom_type: '', survey_booked_date: '', survey_completed: false,
+  lead_source: '', bathroom_type: '', survey_completed_date: new Date().toISOString().slice(0, 10),
   surveyor: '', estimated_value: '', estimated_profit: '', notes: '',
 }
 
@@ -22,11 +22,11 @@ export default function AddLead() {
     setBusy(true)
     const row = {
       ...f,
-      survey_booked_date: f.survey_booked_date || null,
       estimated_value: f.estimated_value === '' ? null : Number(f.estimated_value),
       estimated_profit: f.estimated_profit === '' ? null : Number(f.estimated_profit),
-      stage: f.survey_completed ? 'Survey Complete' : f.survey_booked_date ? 'Survey Booked' : 'New Lead',
-      survey_completed_date: f.survey_completed ? (f.survey_booked_date || new Date().toISOString().slice(0, 10)) : null,
+      stage: 'Survey Complete',
+      survey_completed: true,
+      survey_completed_date: f.survey_completed_date || new Date().toISOString().slice(0, 10),
       created_by: profile?.id,
     }
     const { data, error } = await supabase.from('leads').insert(row).select().single()
@@ -44,7 +44,7 @@ export default function AddLead() {
         <div>
           <div className="eyebrow">Manual entry</div>
           <h1>Add New Lead</h1>
-          <div className="sub">For leads that don't come through the CRM import.</div>
+          <div className="sub">Add a lead after the survey visit — chasing starts from the survey date.</div>
         </div>
       </div>
 
@@ -69,8 +69,8 @@ export default function AddLead() {
               <select value={f.bathroom_type} onChange={e => set('bathroom_type', e.target.value)}>
                 <option value="">Select…</option>{BATHROOM_TYPES.map(s => <option key={s}>{s}</option>)}
               </select></div>
-            <div className="field"><label>Survey booked date</label>
-              <input type="date" value={f.survey_booked_date} onChange={e => set('survey_booked_date', e.target.value)} /></div>
+            <div className="field"><label>Survey date (when the survey was done) <span className="req">*</span></label>
+              <input type="date" required value={f.survey_completed_date} onChange={e => set('survey_completed_date', e.target.value)} /></div>
             <div className="field"><label>Surveyor</label>
               <input value={f.surveyor} onChange={e => set('surveyor', e.target.value)} placeholder="e.g. Danny" /></div>
             <div className="field"><label>Estimated quote value (£)</label>
@@ -78,10 +78,6 @@ export default function AddLead() {
             <div className="field"><label>Estimated profit (£)</label>
               <input type="number" min="0" step="1" value={f.estimated_profit} onChange={e => set('estimated_profit', e.target.value)} /></div>
           </div>
-          <label className="check">
-            <input type="checkbox" checked={f.survey_completed} onChange={e => set('survey_completed', e.target.checked)} />
-            Survey already completed
-          </label>
           <div className="field"><label>Notes</label>
             <textarea rows="3" value={f.notes} onChange={e => set('notes', e.target.value)} /></div>
           <div style={{ display: 'flex', gap: 8 }}>

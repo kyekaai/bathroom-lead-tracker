@@ -37,7 +37,7 @@ export default function Users() {
               <td><b>{u.name}</b>{u.id === profile.id && <span className="badge gold" style={{ marginLeft: 8 }}>you</span>}</td>
               <td>
                 {isManager
-                  ? <select value={u.role} onChange={e => setRole(u.id, e.target.value)} style={{ border: '1px solid var(--line)', borderRadius: 8, padding: '5px 8px' }}>
+                  ? <select value={u.role} onChange={e => setRole(u.id, e.target.value)} style={{ border: '1px solid var(--border-strong)', borderRadius: 8, padding: '5px 8px' }}>
                       {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
                     </select>
                   : <span className="badge grey" style={{ textTransform: 'capitalize' }}>{u.role}</span>}

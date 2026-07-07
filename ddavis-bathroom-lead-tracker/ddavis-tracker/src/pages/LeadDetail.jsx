@@ -8,14 +8,13 @@ import {
   derive, fmtDate, money, selectionBand, MAX_FOLLOW_UPS, today,
 } from '../lib/logic'
 
-const MAIN_STEPS = ['New Lead', 'Survey', 'Selection Form', 'CAD', 'Quote', 'Won/Lost']
+const MAIN_STEPS = ['Survey', 'Selection Form', 'CAD', 'Quote', 'Won/Lost']
 function stepIndex(stage) {
   const i = STAGES.indexOf(stage)
-  if (stage === 'New Lead') return 0
+  if (i === 0) return 0
   if (i <= 2) return 1
-  if (i <= 4) return 2
+  if (i <= 8) return 2
   if (i <= 10) return 3
-  if (i <= 12) return 4
   return 5
 }
 
@@ -104,7 +103,7 @@ export default function LeadDetail() {
           <div className="stagebar" style={{ marginTop: 16 }} aria-label="Pipeline progress">
             {MAIN_STEPS.map((s, i) => (
               <div key={s} className={`step ${i < stepNow ? 'done' : ''} ${i === stepNow ? 'now' : ''}`}>
-                <div className="bar" />{s}
+                <div className="bar" /><span className="step-label">{i < stepNow ? '✓ ' : ''}{s}</span>
               </div>
             ))}
           </div>
@@ -237,7 +236,7 @@ function FollowUps({ lead, followUps, save, profile, reload, notify }) {
 /* ---------------- Survey ---------------- */
 function Survey({ lead, save }) {
   const [f, setF] = useState({
-    survey_booked_date: lead.survey_booked_date || '', survey_completed: lead.survey_completed,
+    survey_completed: lead.survey_completed,
     survey_completed_date: lead.survey_completed_date || '', surveyor: lead.surveyor || '',
     brochures_handed: lead.brochures_handed, selection_form_handed: lead.selection_form_handed,
     survey_notes: lead.survey_notes || '', estimated_value: lead.estimated_value ?? '', estimated_profit: lead.estimated_profit ?? '',
@@ -246,15 +245,12 @@ function Survey({ lead, save }) {
     e.preventDefault()
     const patch = {
       ...f,
-      survey_booked_date: f.survey_booked_date || null,
       survey_completed_date: f.survey_completed ? (f.survey_completed_date || today()) : null,
       estimated_value: f.estimated_value === '' ? null : Number(f.estimated_value),
       estimated_profit: f.estimated_profit === '' ? null : Number(f.estimated_profit),
     }
-    if (f.survey_completed && ['New Lead', 'Survey Booked'].includes(lead.stage)) {
+    if (f.survey_completed && lead.stage === 'Survey Complete' && lead.selection_form_handed) {
       patch.stage = 'Awaiting Selection Form'
-    } else if (!f.survey_completed && f.survey_booked_date && lead.stage === 'New Lead') {
-      patch.stage = 'Survey Booked'
     }
     save(patch, 'survey', f.survey_completed ? 'Survey marked complete' : 'Survey details updated')
   }
@@ -263,8 +259,7 @@ function Survey({ lead, save }) {
       <div className="card-head"><h2>Survey tracking</h2></div>
       <div className="card-body">
         <div className="form-grid">
-          <div className="field"><label>Survey booked date</label><input type="date" value={f.survey_booked_date} onChange={e => setF({ ...f, survey_booked_date: e.target.value })} /></div>
-          <div className="field"><label>Survey completed date</label><input type="date" value={f.survey_completed_date} onChange={e => setF({ ...f, survey_completed_date: e.target.value })} /></div>
+          <div className="field"><label>Survey date (completed)</label><input type="date" value={f.survey_completed_date} onChange={e => setF({ ...f, survey_completed_date: e.target.value })} /></div>
           <div className="field"><label>Surveyor</label><input value={f.surveyor} onChange={e => setF({ ...f, surveyor: e.target.value })} /></div>
           <div className="field"><label>Estimated quote value (£)</label><input type="number" value={f.estimated_value} onChange={e => setF({ ...f, estimated_value: e.target.value })} /></div>
           <div className="field"><label>Estimated profit (£)</label><input type="number" value={f.estimated_profit} onChange={e => setF({ ...f, estimated_profit: e.target.value })} /></div>

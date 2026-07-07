@@ -4,12 +4,21 @@
 // so staff never have to.
 // ============================================================
 
+// The pipeline starts once the survey has been done — from there it's all chasing.
 export const STAGES = [
-  'New Lead', 'Survey Booked', 'Survey Complete', 'Awaiting Selection Form',
+  'Survey Complete', 'Awaiting Selection Form',
   'Selection Form Received', 'CAD Required', 'CAD Booked', 'CAD In Progress',
   'CAD Sent', 'CAD Revisions Required', 'CAD Approved', 'Quote Sent',
   'Quote Follow Up', 'Won', 'Lost',
 ]
+
+// Stage groups used by the dashboard pipeline bar and ?group= filter
+export const STAGE_GROUPS = {
+  new: ['Survey Complete', 'Awaiting Selection Form', 'Selection Form Received'],
+  cad: ['CAD Required', 'CAD Booked', 'CAD In Progress', 'CAD Sent', 'CAD Revisions Required', 'CAD Approved'],
+  quoted: ['Quote Sent', 'Quote Follow Up'],
+  won: ['Won'],
+}
 
 export const ACTIVE_STAGES = STAGES.filter(s => s !== 'Won' && s !== 'Lost')
 
@@ -38,12 +47,14 @@ export const FILE_CATEGORIES = ['cad drawing', 'pdf', 'screenshot', 'selection f
 export const MAX_FOLLOW_UPS = 5
 
 // Colour language: green complete/won · amber needs action · red overdue/lost · blue in progress · grey inactive
+// Stage colour groups — same meaning everywhere:
+// blue = new/chasing form · purple = CAD/design · orange = quoted · green = won · red = lost
 export const STAGE_COLOR = {
-  'New Lead': 'blue', 'Survey Booked': 'blue', 'Survey Complete': 'green',
-  'Awaiting Selection Form': 'amber', 'Selection Form Received': 'green',
-  'CAD Required': 'amber', 'CAD Booked': 'blue', 'CAD In Progress': 'blue',
-  'CAD Sent': 'blue', 'CAD Revisions Required': 'amber', 'CAD Approved': 'green',
-  'Quote Sent': 'blue', 'Quote Follow Up': 'amber', 'Won': 'green', 'Lost': 'red',
+  'Survey Complete': 'blue',
+  'Awaiting Selection Form': 'blue', 'Selection Form Received': 'blue',
+  'CAD Required': 'purple', 'CAD Booked': 'purple', 'CAD In Progress': 'purple',
+  'CAD Sent': 'purple', 'CAD Revisions Required': 'purple', 'CAD Approved': 'purple',
+  'Quote Sent': 'gold', 'Quote Follow Up': 'gold', 'Won': 'green', 'Lost': 'red',
 }
 
 // ---------- date helpers ----------
@@ -86,7 +97,7 @@ const BAND_TO_PRIORITY = { normal: 'Low', amber: 'Medium', red: 'High', critical
 // ---------- the brain: derive everything from the lead record ----------
 export function derive(lead) {
   const closed = lead.stage === 'Won' || lead.stage === 'Lost'
-  const dSurvey = daysSince(lead.survey_completed_date || (lead.survey_completed ? lead.survey_booked_date : null))
+  const dSurvey = daysSince(lead.survey_completed_date)
   const dQuote = daysSince(lead.quote_sent_date)
   const dContact = daysSince(lead.last_chased_date || lead.last_quote_chase_date || lead.created_at)
   const chaseOverdue = isPast(lead.next_chase_date)
@@ -152,7 +163,7 @@ export function derive(lead) {
 
     // No contact yet
     if ((lead.chase_attempts || 0) === 0 && (lead.quote_chase_attempts || 0) === 0 &&
-        (dContact ?? 0) >= 7 && lead.stage !== 'New Lead' && lead.stage !== 'Survey Booked') {
+        (dContact ?? 0) >= 7) {
       flags.noContact = true
       priority = maxPriority(priority, 'Medium')
       nextAction = nextAction || 'No recent contact — check in with customer'
@@ -180,8 +191,6 @@ export function derive(lead) {
 }
 
 const DEFAULT_ACTION = {
-  'New Lead': 'Contact customer and book a survey',
-  'Survey Booked': 'Carry out survey',
   'Survey Complete': 'Hand over brochures and selection form',
   'Awaiting Selection Form': 'Wait / chase selection form',
   'Selection Form Received': 'Decide if CAD design is required',
@@ -245,7 +254,7 @@ export const IMPORT_FIELDS = [
   { key: 'email', label: 'Email' },
   { key: 'lead_source', label: 'Lead source' },
   { key: 'bathroom_type', label: 'Bathroom type' },
-  { key: 'survey_booked_date', label: 'Survey booked date' },
+  { key: 'survey_completed_date', label: 'Survey date (when the survey was done)' },
   { key: 'surveyor', label: 'Surveyor' },
   { key: 'estimated_value', label: 'Estimated quote value' },
   { key: 'estimated_profit', label: 'Estimated profit' },
@@ -264,7 +273,7 @@ export function guessMapping(headers) {
   map.email = find('email')
   map.lead_source = find('source', 'channel')
   map.bathroom_type = find('bathroomtype', 'type', 'project')
-  map.survey_booked_date = find('surveydate', 'surveybooked', 'appointment')
+  map.survey_completed_date = find('surveydate', 'surveycompleted', 'survey', 'appointment')
   map.surveyor = find('surveyor')
   map.estimated_value = find('value', 'quote', 'price', 'amount')
   map.estimated_profit = find('profit', 'margin')
