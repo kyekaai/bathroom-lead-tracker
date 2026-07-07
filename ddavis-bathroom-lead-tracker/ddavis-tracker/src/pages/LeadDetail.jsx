@@ -53,6 +53,16 @@ export default function LeadDetail() {
   const d = derive(lead)
   const stepNow = stepIndex(lead.stage)
 
+  // Stage → CAD status, so the stage dropdown and the CAD Designs board always match
+  const STAGE_TO_CAD = {
+    'CAD Required': 'not booked',
+    'CAD Booked': 'booked',
+    'CAD In Progress': 'in progress',
+    'CAD Sent': 'sent to customer',
+    'CAD Revisions Required': 'revisions requested',
+    'CAD Approved': 'approved',
+  }
+
   async function changeStage(stage) {
     if (stage === 'Lost') {
       const reason = prompt('Reason lost? (' + LOST_REASONS.join(' / ') + ')', 'No response')
@@ -61,6 +71,10 @@ export default function LeadDetail() {
     }
     const patch = { stage }
     if (stage === 'Won') patch.quote_outcome = 'accepted'
+    if (STAGE_TO_CAD[stage]) {
+      patch.cad_required = 'yes'
+      patch.cad_status = STAGE_TO_CAD[stage]
+    }
     save(patch, 'stage', `Stage changed to ${stage}`)
   }
 

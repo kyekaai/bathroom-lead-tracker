@@ -7,6 +7,15 @@
 const UPDATES = [
   {
     date: '7 July 2026',
+    tag: 'Fix',
+    title: 'Stage dropdown now updates the CAD board',
+    points: [
+      'Picking a CAD stage from the "Move to stage" dropdown (CAD Booked, In Progress, Sent, etc.) now moves the lead to the matching column on the CAD Designs board.',
+      'It already worked the other way round — now both stay in sync whichever one you update.',
+    ],
+  },
+  {
+    date: '7 July 2026',
     tag: 'New',
     title: 'Mobile menu bar & bolder pipeline',
     points: [
