@@ -1,8 +1,16 @@
 import { useNavigate } from 'react-router-dom'
-import { STAGE_COLOR, PRIORITY_COLOR, derive, fmtDate, money } from '../lib/logic'
+import { STAGE_COLOR, PRIORITY_COLOR, derive, fmtDate, money, daysSince } from '../lib/logic'
 
 export function StageBadge({ stage }) {
   return <span className={`badge ${STAGE_COLOR[stage] || 'grey'}`}><span className={`dot ${STAGE_COLOR[stage] || 'grey'}`} />{stage}</span>
+}
+
+// Flags leads sitting untouched: amber from 7 days, red from 14
+export function IdleBadge({ lead }) {
+  if (lead.stage === 'Won' || lead.stage === 'Lost') return null
+  const d = daysSince(lead.updated_at)
+  if (d === null || d < 7) return null
+  return <span className={`badge ${d >= 14 ? 'red' : 'amber'}`} title={`No activity for ${d} days`}>💤 {d}d idle</span>
 }
 
 export function PriorityBadge({ priority }) {
@@ -48,6 +56,7 @@ export function LeadCard({ lead }) {
       </div>
       <div className="meta">
         <StageBadge stage={lead.stage} />
+        <IdleBadge lead={lead} />
         {lead.bathroom_type && <span className="badge grey">{lead.bathroom_type}</span>}
         {lead.lead_source && <span className="badge gold">{lead.lead_source}</span>}
       </div>
