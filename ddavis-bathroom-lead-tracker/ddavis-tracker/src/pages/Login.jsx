@@ -18,8 +18,9 @@ export default function Login() {
   return (
     <div className="login-wrap">
       <form className="login-card" onSubmit={submit}>
-        <div className="mark">DD <span>DAVIS</span></div>
-        <div className="tag">Bathroom Lead Tracker</div>
+        <img src="/logo.png" alt="DD Davis Limited — Built on trust. Driven by quality."
+          style={{ display: 'block', width: '100%', maxWidth: 240, height: 'auto', margin: '0 auto 8px' }} />
+        <div className="tag" style={{ textAlign: 'center' }}>Bathroom Lead Tracker</div>
         <label htmlFor="email">Email</label>
         <input id="email" type="email" autoComplete="username" required value={email} onChange={e => setEmail(e.target.value)} />
         <label htmlFor="pw">Password</label>
