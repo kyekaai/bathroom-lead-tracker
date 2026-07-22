@@ -454,3 +454,48 @@ html, body {
 @media (max-width: 720px) {
   input, select, textarea { font-size: 16px; }
 }
+
+/* ============================================================
+   CAD BOARD v2 — coloured columns, drag & drop, richer cards
+   ============================================================ */
+.kanban .col {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 10px 10px 12px; border-top: 3px solid var(--col-color, var(--border-strong));
+  transition: background 150ms ease, border-color 150ms ease;
+}
+.kanban .col.drop-over { background: var(--surface-2); border-color: var(--col-color); }
+.kanban .col > header { padding: 2px 4px 10px; align-items: center; }
+.kanban .col-title { color: var(--text); }
+.kanban .col-meta { display: flex; align-items: center; gap: 8px; }
+.kanban .col-meta em { font-style: normal; font-size: 11px; color: var(--text-muted); }
+.kanban .col-count {
+  min-width: 20px; text-align: center; padding: 1px 7px; border-radius: 999px;
+  background: color-mix(in srgb, var(--col-color) 18%, transparent); color: var(--col-color);
+  font-size: 11.5px; font-weight: 700;
+}
+.kcard { cursor: grab; border-left: 3px solid var(--col-color, var(--border)); }
+.kcard:active { cursor: grabbing; }
+.kcard.dragging { opacity: 0.45; transform: rotate(1.5deg); }
+.kcard.late { border-color: var(--stage-lost); border-left-color: var(--stage-lost); }
+.kcard .k-sub { font-size: 11.5px; color: var(--text-muted); margin-top: 1px; }
+.kcard .k-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.kcard .k-designer {
+  display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--text-secondary);
+  background: var(--neutral-soft); border-radius: 999px; padding: 2px 8px 2px 2px;
+}
+.kcard .k-designer i {
+  font-style: normal; width: 18px; height: 18px; border-radius: 50%; display: inline-flex;
+  align-items: center; justify-content: center; font-size: 9px; font-weight: 800;
+  background: var(--accent); color: #141418;
+}
+.kcard .k-unassigned {
+  font-size: 11.5px; color: var(--stage-quoted); background: var(--stage-quoted-soft);
+  border-radius: 999px; padding: 2px 8px;
+}
+.kcard .k-rev { font-size: 11.5px; color: var(--stage-lost); background: var(--stage-lost-soft); border-radius: 999px; padding: 2px 8px; }
+.kcard .k-foot { display: flex; justify-content: space-between; margin-top: 8px; font-size: 11.5px; color: var(--text-muted); }
+.kcard.late .k-foot span:first-child { color: var(--stage-lost); }
+.k-empty {
+  border: 1.5px dashed var(--border-strong); border-radius: 10px; padding: 18px 10px;
+  text-align: center; font-size: 12px; color: var(--text-muted);
+}
