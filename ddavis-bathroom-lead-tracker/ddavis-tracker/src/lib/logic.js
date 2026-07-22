@@ -46,6 +46,16 @@ export const CAD_STATUSES = [
   'sent to customer', 'revisions requested', 'approved', 'rejected',
 ]
 
+// Stage → CAD status, so stage moves and the CAD Designs board always match
+export const STAGE_TO_CAD = {
+  'CAD Required': 'not booked',
+  'CAD Booked': 'booked',
+  'CAD In Progress': 'in progress',
+  'CAD Sent': 'sent to customer',
+  'CAD Revisions Required': 'revisions requested',
+  'CAD Approved': 'approved',
+}
+
 export const FILE_CATEGORIES = ['cad drawing', 'pdf', 'screenshot', 'selection form', 'quote', 'other']
 
 export const MAX_FOLLOW_UPS = 5
