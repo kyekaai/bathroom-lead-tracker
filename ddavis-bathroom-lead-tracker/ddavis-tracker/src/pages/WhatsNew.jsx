@@ -6,6 +6,18 @@
 
 const UPDATES = [
   {
+    date: '22 July 2026',
+    tag: 'New',
+    title: 'Pre-survey stages, sending docs, quick emails & more',
+    points: [
+      'Leads can now be tracked before the survey — new stages: New Enquiry, Contacted, and Survey Booked. Booked surveys show on the Calendar.',
+      'New Send Docs tab on every lead — pick brochures and the selection form, then send via WhatsApp, Outlook or your mail app with the customer\'s details and message pre-filled. Sending logs on the timeline and starts the chase clock automatically.',
+      'Quick emails on the same tab — one tap opens a pre-written email to confirm a survey, chase a selection form, or follow up a quote.',
+      'Leads can be deleted (button at the bottom of the lead page), and the table view now has tick-boxes for bulk stage moves and bulk delete.',
+      'Leads sitting untouched for 7+ days now show a 💤 idle badge so stale ones stand out.',
+    ],
+  },
+  {
     date: '7 July 2026',
     tag: 'Fix',
     title: 'Stage dropdown now updates the CAD board',
