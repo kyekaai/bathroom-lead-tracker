@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import { supabase, logActivity } from '../lib/supabase'
 import { useApp } from '../App'
 import { StageBadge, PriorityBadge } from '../components/ui'
-import { DOCS, waLink, mailtoLink, outlookLink, buildMessage, waNumber } from '../lib/docs'
+import { DOCS, waLink, mailtoLink, outlookLink, buildMessage, waNumber, EMAIL_TEMPLATES, templateOutlook, templateMailto } from '../lib/docs'
 import {
   STAGES, PRE_SURVEY_STAGES, LOST_REASONS, CONTACT_METHODS, CAD_STATUSES, FILE_CATEGORIES,
   derive, fmtDate, money, selectionBand, MAX_FOLLOW_UPS, today,
@@ -231,6 +231,7 @@ function SendDocs({ lead, save }) {
   }
 
   return (
+    <>
     <div className="card"><div className="card-body">
       <h2 style={{ marginTop: 0 }}>Send brochures & selection form</h2>
       <p className="muted small">Tap to select what to send, then choose how. Sending the selection form ticks it as sent and starts the chase clock automatically.</p>
@@ -267,6 +268,31 @@ function SendDocs({ lead, save }) {
       {!waNumber(lead.phone) && <p className="muted small" style={{ marginTop: 8 }}>No usable mobile number on this lead — WhatsApp will open so you can pick the contact yourself.</p>}
       {!lead.email && <p className="muted small" style={{ marginTop: 4 }}>No email on this lead — Outlook/Mail will open blank so you can type the address.</p>}
     </div></div>
+
+    <div className="card" style={{ marginTop: 14 }}><div className="card-body">
+      <h2 style={{ marginTop: 0 }}>Quick emails</h2>
+      <p className="muted small">Pre-written emails for the usual jobs — opens in Outlook or your mail app with everything filled in, and logs on the timeline.</p>
+      <table className="data" style={{ marginTop: 10 }}>
+        <tbody>
+          {EMAIL_TEMPLATES.map(t => (
+            <tr key={t.key}>
+              <td><b>{t.label}</b><div className="muted small">{t.subject}</div></td>
+              <td className="right" style={{ whiteSpace: 'nowrap' }}>
+                <button className="btn sm gold" style={{ marginRight: 6 }}
+                  onClick={() => { window.open(templateOutlook(lead, t, fmtDate), '_blank'); save({ updated_at: new Date().toISOString() }, 'email', `Sent "${t.label}" email via Outlook`) }}>
+                  Outlook
+                </button>
+                <button className="btn sm ghost"
+                  onClick={() => { window.location.href = templateMailto(lead, t, fmtDate); save({ updated_at: new Date().toISOString() }, 'email', `Sent "${t.label}" email via mail app`) }}>
+                  Mail app
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div></div>
+    </>
   )
 }
 
