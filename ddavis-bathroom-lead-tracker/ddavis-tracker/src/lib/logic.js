@@ -31,7 +31,7 @@ export const BATHROOM_TYPES = [
 ]
 
 export const LEAD_SOURCES = [
-  'Website', 'Checkatrade', 'Google Ads', 'Facebook', 'Word of mouth', 'Showroom', 'Repeat customer', 'Other',
+  'Website', 'Checkatrade', 'TradesBoost', 'Google Ads', 'Facebook', 'Word of mouth', 'Showroom', 'Repeat customer', 'Other',
 ]
 
 export const LOST_REASONS = [
