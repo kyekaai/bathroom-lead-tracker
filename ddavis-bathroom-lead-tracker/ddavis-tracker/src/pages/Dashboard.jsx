@@ -7,6 +7,7 @@ import { buildTodaysActions, derive, money, fmtDate } from '../lib/logic'
 
 // Pipeline groups — colours mean the same thing everywhere
 const GROUPS = [
+  { key: 'enquiry', label: 'Pre-Survey', color: 'var(--stage-enquiry)', stages: ['New Enquiry', 'Contacted', 'Survey Booked'] },
   { key: 'new', label: 'Chasing Form', color: 'var(--stage-new)', stages: ['Survey Complete', 'Awaiting Selection Form', 'Selection Form Received'] },
   { key: 'cad', label: 'CAD Design', color: 'var(--stage-contact)', stages: ['CAD Required', 'CAD Booked', 'CAD In Progress', 'CAD Sent', 'CAD Revisions Required', 'CAD Approved'] },
   { key: 'quoted', label: 'Quoted', color: 'var(--stage-quoted)', stages: ['Quote Sent', 'Quote Follow Up'] },
