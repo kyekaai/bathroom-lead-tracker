@@ -8,6 +8,46 @@ const UPDATES = [
   {
     date: '22 July 2026',
     tag: 'New',
+    title: 'CAD board drag & drop — move jobs by dragging the card',
+    points: [
+      'Drag any CAD card into a new column and it moves instantly — the lead\'s pipeline stage, CAD status and timeline all update automatically.',
+      'Columns now have coloured top edges and show the total value of jobs at each step.',
+      'Cards show the designer\'s initials, revision count, booked date and value. Overdue booked jobs flag in red.',
+      'Empty columns show a dashed drop zone so it\'s clear where to drag.',
+    ],
+  },
+  {
+    date: '22 July 2026',
+    tag: 'New',
+    title: 'Quick stage move from the leads list',
+    points: [
+      'The stage badge on every lead card and table row is now a dropdown — change a lead\'s stage without opening it.',
+      'All the same side-effects apply: CAD board stays in sync, Won marks the quote accepted, Lost asks for a reason, and every move logs on the timeline.',
+    ],
+  },
+  {
+    date: '22 July 2026',
+    tag: 'New',
+    title: 'Install as a phone app',
+    points: [
+      'The tracker can now be installed on your phone home screen so it opens like a proper app — no browser bar.',
+      'On iPhone: tap Share → Add to Home Screen. On Android: tap the menu (⋮) → Install app.',
+      'It opens full-screen with the DD Davis icon, matching the Surveyor Toolkit on your home screen.',
+    ],
+  },
+  {
+    date: '22 July 2026',
+    tag: 'Design',
+    title: 'New Add Lead form, DD Davis logo & mobile fixes',
+    points: [
+      'The Add Lead form is redesigned — four stage cards at the top let you pick where the lead is up to, with the form sections appearing below. Value and profit fields removed (add those later on the lead). TradesBoost added as a lead source.',
+      'The full DD Davis logo ("Built on trust. Driven by quality.") now appears in the sidebar and on the sign-in screen, replacing the text.',
+      'Fixed mobile sideways swiping — the app now locks to the screen width and only scrolls up and down, like a native app.',
+    ],
+  },
+  {
+    date: '22 July 2026',
+    tag: 'New',
     title: 'Pre-survey stages, sending docs, quick emails & more',
     points: [
       'Leads can now be tracked before the survey — new stages: New Enquiry, Contacted, and Survey Booked. Booked surveys show on the Calendar.',
