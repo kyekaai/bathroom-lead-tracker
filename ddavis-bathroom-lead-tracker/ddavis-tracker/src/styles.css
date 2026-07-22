@@ -425,3 +425,15 @@ table.data tr.click:hover td { background: var(--surface-2); }
 
 /* Sidebar brand logo */
 .brand-logo { display: block; width: 100%; max-width: 192px; height: auto; }
+
+/* Quick stage move select — compact, coloured like the stage badges */
+.stage-quick {
+  appearance: none; -webkit-appearance: none;
+  background: var(--surface-2) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='%239a9aa4'/%3E%3C/svg%3E") no-repeat right 8px center;
+  border: 1px solid var(--border); border-radius: 8px;
+  padding: 4px 24px 4px 10px; font-size: 12px; font-weight: 600;
+  cursor: pointer; max-width: 100%;
+}
+.stage-quick:hover { border-color: var(--border-strong); }
+.stage-quick:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-ring); }
+.stage-quick option { color: var(--text); background: var(--surface-2); }
