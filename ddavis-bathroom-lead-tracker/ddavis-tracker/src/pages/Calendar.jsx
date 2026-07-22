@@ -12,6 +12,7 @@ export default function Calendar() {
   const active = leads.filter(l => l.stage !== 'Won' && l.stage !== 'Lost')
   const tasks = []
   for (const l of active) {
+    if (l.stage === 'Survey Booked' && l.survey_completed_date) tasks.push({ date: l.survey_completed_date, what: `Survey${l.surveyor ? ` — ${l.surveyor}` : ''}`, lead: l, color: 'teal' })
     if (l.next_chase_date) tasks.push({ date: l.next_chase_date, what: 'Chase selection form', lead: l, color: 'amber' })
     if (l.next_quote_chase_date) tasks.push({ date: l.next_quote_chase_date, what: 'Follow up quote', lead: l, color: 'amber' })
     if (l.cad_booked_date && ['booked', 'in progress'].includes(l.cad_status)) tasks.push({ date: l.cad_booked_date, what: `CAD appointment${l.cad_designer ? ` — ${l.cad_designer}` : ''}`, lead: l, color: 'blue' })
