@@ -1,23 +1,55 @@
-import { Link } from 'react-router-dom'
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useApp } from '../App'
-import { fmtDate } from '../lib/logic'
+import { supabase, logActivity } from '../lib/supabase'
+import { fmtDate, money, isPast } from '../lib/logic'
 import { Empty } from '../components/ui'
 
 const COLS = [
-  { key: 'not booked', label: 'To book', color: 'amber' },
-  { key: 'booked', label: 'Booked', color: 'blue' },
-  { key: 'in progress', label: 'In progress', color: 'blue' },
-  { key: 'sent to customer', label: 'Sent — awaiting approval', color: 'blue' },
-  { key: 'revisions requested', label: 'Revisions requested', color: 'amber' },
-  { key: 'approved', label: 'Approved', color: 'green' },
+  { key: 'not booked',          label: 'To book',                  color: 'var(--stage-quoted)' },
+  { key: 'booked',              label: 'Booked',                   color: 'var(--stage-new)' },
+  { key: 'in progress',         label: 'In progress',              color: 'var(--stage-contact)' },
+  { key: 'sent to customer',    label: 'Sent — awaiting approval', color: 'var(--stage-new)' },
+  { key: 'revisions requested', label: 'Revisions requested',      color: 'var(--stage-lost)' },
+  { key: 'approved',            label: 'Approved',                 color: 'var(--stage-won)' },
 ]
 
+// CAD status → lead stage, so the board and the pipeline stay in step
+const CAD_TO_STAGE = {
+  'not booked': 'CAD Required',
+  'booked': 'CAD Booked',
+  'in progress': 'CAD In Progress',
+  'sent to customer': 'CAD Sent',
+  'revisions requested': 'CAD Revisions Required',
+  'approved': 'CAD Approved',
+}
+
 export default function CadDesigns() {
-  const { leads, loading } = useApp()
+  const { leads, loading, profile, notify, refresh } = useApp()
+  const nav = useNavigate()
+  const [dragId, setDragId] = useState(null)
+  const [overCol, setOverCol] = useState(null)
+
   if (loading) return <p className="muted">Loading…</p>
 
   const cadLeads = leads.filter(l =>
     l.cad_required === 'yes' && l.stage !== 'Won' && l.stage !== 'Lost' && l.cad_status !== 'not required')
+
+  async function drop(status) {
+    setOverCol(null)
+    const lead = cadLeads.find(l => l.id === dragId)
+    setDragId(null)
+    if (!lead || lead.cad_status === status) return
+    const patch = { cad_status: status, stage: CAD_TO_STAGE[status] }
+    if (status === 'approved') patch.cad_completed_date = new Date().toISOString().slice(0, 10)
+    const { error } = await supabase.from('leads').update(patch).eq('id', lead.id)
+    if (error) return notify('Could not move card — ' + error.message)
+    await logActivity(lead.id, 'cad', `CAD moved to ${status} (board)`, profile?.name)
+    await refresh()
+    notify(`${lead.customer_name} → ${COLS.find(c => c.key === status)?.label} ✓`)
+  }
+
+  const initials = name => name.trim().split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase()
 
   return (
     <>
@@ -25,7 +57,7 @@ export default function CadDesigns() {
         <div>
           <div className="eyebrow">Design pipeline</div>
           <h1>CAD Designs</h1>
-          <div className="sub">{cadLeads.length} live CAD job{cadLeads.length === 1 ? '' : 's'} — update status inside each lead's CAD tab.</div>
+          <div className="sub">{cadLeads.length} live CAD job{cadLeads.length === 1 ? '' : 's'} — drag a card to move it, or tap to open the lead.</div>
         </div>
       </div>
 
@@ -34,17 +66,44 @@ export default function CadDesigns() {
         : <div className="kanban">
             {COLS.map(c => {
               const items = cadLeads.filter(l => l.cad_status === c.key)
+              const value = items.reduce((s, l) => s + Number(l.quote_value ?? l.estimated_value ?? 0), 0)
               return (
-                <div className="col" key={c.key}>
-                  <header><span><span className={`dot ${c.color}`} style={{ marginRight: 6 }} />{c.label}</span><span>{items.length}</span></header>
-                  {items.map(l => (
-                    <Link className="kcard" key={l.id} to={`/leads/${l.id}`}>
-                      <b>{l.customer_name}</b>
-                      <span>{l.cad_designer ? `Designer: ${l.cad_designer}` : 'No designer assigned'}</span><br />
-                      <span>{l.cad_booked_date ? `Booked ${fmtDate(l.cad_booked_date)}` : ''}{l.cad_revision_count ? ` · rev ${l.cad_revision_count}` : ''}</span>
-                    </Link>
-                  ))}
-                  {items.length === 0 && <p className="muted small" style={{ padding: '4px 6px' }}>—</p>}
+                <div className={`col ${overCol === c.key ? 'drop-over' : ''}`} key={c.key}
+                  style={{ '--col-color': c.color }}
+                  onDragOver={e => { e.preventDefault(); setOverCol(c.key) }}
+                  onDragLeave={() => setOverCol(o => o === c.key ? null : o)}
+                  onDrop={() => drop(c.key)}>
+                  <header>
+                    <span className="col-title">{c.label}</span>
+                    <span className="col-meta">{value > 0 && <em>{money(value)}</em>}<span className="col-count">{items.length}</span></span>
+                  </header>
+
+                  {items.map(l => {
+                    const late = c.key === 'booked' && isPast(l.cad_booked_date)
+                    return (
+                      <div className={`kcard ${dragId === l.id ? 'dragging' : ''} ${late ? 'late' : ''}`} key={l.id}
+                        draggable onDragStart={() => setDragId(l.id)} onDragEnd={() => setDragId(null)}
+                        onClick={() => nav(`/leads/${l.id}`)} role="button" tabIndex={0}
+                        onKeyDown={e => e.key === 'Enter' && nav(`/leads/${l.id}`)}>
+                        <b>{l.customer_name}</b>
+                        <div className="k-sub">{[l.postcode, l.bathroom_type].filter(Boolean).join(' · ') || '\u00A0'}</div>
+                        <div className="k-chips">
+                          {l.cad_designer
+                            ? <span className="k-designer"><i>{initials(l.cad_designer)}</i>{l.cad_designer}</span>
+                            : <span className="k-unassigned">⚠ No designer</span>}
+                          {l.cad_revision_count > 0 && <span className="k-rev">rev {l.cad_revision_count}</span>}
+                        </div>
+                        {(l.cad_booked_date || value > 0) && (
+                          <div className="k-foot">
+                            <span>{l.cad_booked_date ? `${late ? '⚠ ' : ''}Booked ${fmtDate(l.cad_booked_date)}` : ''}</span>
+                            <span>{money(l.quote_value ?? l.estimated_value)}</span>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+
+                  {items.length === 0 && <div className="k-empty">Drop a card here</div>}
                 </div>
               )
             })}
