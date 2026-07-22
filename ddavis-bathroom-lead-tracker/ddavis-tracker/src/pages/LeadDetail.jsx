@@ -5,7 +5,7 @@ import { useApp } from '../App'
 import { StageBadge, PriorityBadge } from '../components/ui'
 import { DOCS, waLink, mailtoLink, outlookLink, buildMessage, waNumber, EMAIL_TEMPLATES, templateOutlook, templateMailto } from '../lib/docs'
 import {
-  STAGES, PRE_SURVEY_STAGES, LOST_REASONS, CONTACT_METHODS, CAD_STATUSES, FILE_CATEGORIES,
+  STAGES, PRE_SURVEY_STAGES, STAGE_TO_CAD, LOST_REASONS, CONTACT_METHODS, CAD_STATUSES, FILE_CATEGORIES,
   derive, fmtDate, money, selectionBand, MAX_FOLLOW_UPS, today,
 } from '../lib/logic'
 
@@ -53,16 +53,6 @@ export default function LeadDetail() {
   if (!lead) return <p className="muted">Loading lead…</p>
   const d = derive(lead)
   const stepNow = stepIndex(lead.stage)
-
-  // Stage → CAD status, so the stage dropdown and the CAD Designs board always match
-  const STAGE_TO_CAD = {
-    'CAD Required': 'not booked',
-    'CAD Booked': 'booked',
-    'CAD In Progress': 'in progress',
-    'CAD Sent': 'sent to customer',
-    'CAD Revisions Required': 'revisions requested',
-    'CAD Approved': 'approved',
-  }
 
   async function changeStage(stage) {
     if (stage === 'Lost') {
