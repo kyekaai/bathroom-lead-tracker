@@ -4,18 +4,18 @@ import { supabase, logActivity } from '../lib/supabase'
 import { useApp } from '../App'
 import { StageBadge, PriorityBadge } from '../components/ui'
 import {
-  STAGES, LOST_REASONS, CONTACT_METHODS, CAD_STATUSES, FILE_CATEGORIES,
+  STAGES, PRE_SURVEY_STAGES, LOST_REASONS, CONTACT_METHODS, CAD_STATUSES, FILE_CATEGORIES,
   derive, fmtDate, money, selectionBand, MAX_FOLLOW_UPS, today,
 } from '../lib/logic'
 
-const MAIN_STEPS = ['Survey', 'Selection Form', 'CAD', 'Quote', 'Won/Lost']
+const MAIN_STEPS = ['Enquiry', 'Survey', 'Selection Form', 'CAD', 'Quote', 'Won/Lost']
 function stepIndex(stage) {
-  const i = STAGES.indexOf(stage)
-  if (i === 0) return 0
-  if (i <= 2) return 1
-  if (i <= 8) return 2
-  if (i <= 10) return 3
-  return 5
+  if (PRE_SURVEY_STAGES.includes(stage)) return 0
+  if (stage === 'Survey Complete') return 1
+  if (stage === 'Awaiting Selection Form' || stage === 'Selection Form Received') return 2
+  if (stage.startsWith('CAD')) return 3
+  if (stage.startsWith('Quote')) return 4
+  return 6 // Won / Lost — every step done
 }
 
 export default function LeadDetail() {
@@ -75,7 +75,35 @@ export default function LeadDetail() {
       patch.cad_required = 'yes'
       patch.cad_status = STAGE_TO_CAD[stage]
     }
+    // Keep the survey flag in step with pre/post-survey stages
+    if (PRE_SURVEY_STAGES.includes(stage)) {
+      patch.survey_completed = false
+    } else if (stage === 'Survey Complete') {
+      patch.survey_completed = true
+      if (!lead.survey_completed_date) patch.survey_completed_date = today()
+    }
     save(patch, 'stage', `Stage changed to ${stage}`)
+  }
+
+  // Permanently delete this lead + everything attached to it
+  async function deleteLead() {
+    const sure = window.confirm(
+      `Delete ${lead.customer_name}?\n\nThis permanently removes the lead plus all follow-ups, timeline history and files. This cannot be undone.`
+    )
+    if (!sure) return
+    const check = window.prompt(`Type DELETE to confirm removing ${lead.customer_name}:`)
+    if (check !== 'DELETE') return notify('Delete cancelled')
+
+    // Remove any files from Storage first (the database rows cascade automatically)
+    if (files.length > 0) {
+      const paths = files.map(f => f.storage_path).filter(Boolean)
+      if (paths.length) await supabase.storage.from('lead-files').remove(paths)
+    }
+    const { error } = await supabase.from('leads').delete().eq('id', id)
+    if (error) return notify('Delete failed — ' + error.message)
+    await refresh()
+    notify('Lead deleted')
+    nav('/leads')
   }
 
   return (
@@ -151,6 +179,10 @@ export default function LeadDetail() {
       {tab === 'quote' && <Quote lead={lead} save={save} />}
       {tab === 'files' && <Files lead={lead} files={files} profile={profile} reload={load} notify={notify} />}
       {tab === 'notes' && <Notes lead={lead} save={save} />}
+
+      <div style={{ marginTop: 24, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'flex-end' }}>
+        <button className="btn danger" onClick={deleteLead}>Delete this lead</button>
+      </div>
     </>
   )
 }
