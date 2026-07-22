@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useApp } from '../App'
 import { supabase, logActivity } from '../lib/supabase'
-import { LeadCard, StageBadge, PriorityBadge, IdleBadge, Empty } from '../components/ui'
+import { LeadCard, StageBadge, StageSelect, PriorityBadge, IdleBadge, Empty } from '../components/ui'
 import { STAGES, PRE_SURVEY_STAGES, BATHROOM_TYPES, LEAD_SOURCES, STAGE_GROUPS, derive, fmtDate, money, today } from '../lib/logic'
 
 export default function Leads() {
@@ -179,7 +179,7 @@ export default function Leads() {
                   </td>
                   <td><b>{lead.customer_name}</b><div className="muted small">{lead.postcode || ''} · {lead.lead_source || '—'} · {lead.bathroom_type || '—'}</div></td>
                   <td className="small">{lead.phone || '—'}<div className="muted">{lead.email || ''}</div></td>
-                  <td><StageBadge stage={lead.stage} /></td>
+                  <td onClick={e => e.stopPropagation()}><StageSelect lead={lead} /></td>
                   <td><IdleBadge lead={lead} /></td>
                   <td className="small">{fmtDate(lead.survey_completed_date)}</td>
                   <td className="small">{lead.surveyor || '—'}</td>
