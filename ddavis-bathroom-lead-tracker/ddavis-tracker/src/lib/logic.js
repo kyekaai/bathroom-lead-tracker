@@ -4,8 +4,11 @@
 // so staff never have to.
 // ============================================================
 
-// The pipeline starts once the survey has been done — from there it's all chasing.
+// Pre-survey stages — for leads that come in before a survey has happened.
+export const PRE_SURVEY_STAGES = ['New Enquiry', 'Contacted', 'Survey Booked']
+
 export const STAGES = [
+  ...PRE_SURVEY_STAGES,
   'Survey Complete', 'Awaiting Selection Form',
   'Selection Form Received', 'CAD Required', 'CAD Booked', 'CAD In Progress',
   'CAD Sent', 'CAD Revisions Required', 'CAD Approved', 'Quote Sent',
@@ -14,6 +17,7 @@ export const STAGES = [
 
 // Stage groups used by the dashboard pipeline bar and ?group= filter
 export const STAGE_GROUPS = {
+  enquiry: ['New Enquiry', 'Contacted', 'Survey Booked'],
   new: ['Survey Complete', 'Awaiting Selection Form', 'Selection Form Received'],
   cad: ['CAD Required', 'CAD Booked', 'CAD In Progress', 'CAD Sent', 'CAD Revisions Required', 'CAD Approved'],
   quoted: ['Quote Sent', 'Quote Follow Up'],
@@ -50,6 +54,7 @@ export const MAX_FOLLOW_UPS = 5
 // Stage colour groups — same meaning everywhere:
 // blue = new/chasing form · purple = CAD/design · orange = quoted · green = won · red = lost
 export const STAGE_COLOR = {
+  'New Enquiry': 'teal', 'Contacted': 'teal', 'Survey Booked': 'teal',
   'Survey Complete': 'blue',
   'Awaiting Selection Form': 'blue', 'Selection Form Received': 'blue',
   'CAD Required': 'purple', 'CAD Booked': 'purple', 'CAD In Progress': 'purple',
@@ -104,6 +109,7 @@ export function derive(lead) {
   const quoteChaseOverdue = isPast(lead.next_quote_chase_date)
 
   const flags = {
+    contactEnquiry: false, surveyDue: false,
     chaseSelection: false, bookCad: false, cadInProgress: false, cadAwaitingApproval: false,
     sendQuote: false, followUpQuote: false, overdue: false, noContact: false, atRisk: false,
   }
@@ -111,6 +117,20 @@ export function derive(lead) {
   let priority = 'Low'
 
   if (!closed) {
+    // Pre-survey: new enquiries need contacting fast
+    const dCreated = daysSince(lead.created_at)
+    if (lead.stage === 'New Enquiry' && (dCreated ?? 0) >= 1) {
+      flags.contactEnquiry = true
+      priority = maxPriority(priority, (dCreated ?? 0) >= 3 ? 'High' : 'Medium')
+      nextAction = nextAction || `Contact new enquiry and book a survey (${dCreated} days old)`
+    }
+    // Pre-survey: booked survey date has passed — mark it complete or rebook
+    if (lead.stage === 'Survey Booked' && isPast(lead.survey_completed_date)) {
+      flags.surveyDue = true
+      priority = maxPriority(priority, 'Medium')
+      nextAction = nextAction || 'Survey date has passed — mark Survey Complete or rebook'
+    }
+
     // Selection form chasing
     const waitingForm = lead.survey_completed && !lead.selection_form_returned && lead.cad_required !== 'no'
     if (waitingForm && (dSurvey ?? 0) >= 4) {
@@ -191,6 +211,9 @@ export function derive(lead) {
 }
 
 const DEFAULT_ACTION = {
+  'New Enquiry': 'Contact customer and book a survey',
+  'Contacted': 'Book the survey in',
+  'Survey Booked': 'Carry out the survey',
   'Survey Complete': 'Hand over brochures and selection form',
   'Awaiting Selection Form': 'Wait / chase selection form',
   'Selection Form Received': 'Decide if CAD design is required',
@@ -214,6 +237,8 @@ export function buildTodaysActions(leads) {
   const derived = leads.map(l => ({ lead: l, d: derive(l) }))
   const bucket = key => derived.filter(x => x.d.flags[key])
   return [
+    { key: 'contactEnquiry',     label: 'New enquiries to contact',      color: 'amber', items: bucket('contactEnquiry') },
+    { key: 'surveyDue',          label: 'Surveys to mark complete',      color: 'blue',  items: bucket('surveyDue') },
     { key: 'chaseSelection',     label: 'Selection forms to chase',      color: 'red',   items: bucket('chaseSelection') },
     { key: 'bookCad',            label: 'CAD appointments to book',      color: 'amber', items: bucket('bookCad') },
     { key: 'cadInProgress',      label: 'CAD designs in progress',       color: 'blue',  items: bucket('cadInProgress') },
