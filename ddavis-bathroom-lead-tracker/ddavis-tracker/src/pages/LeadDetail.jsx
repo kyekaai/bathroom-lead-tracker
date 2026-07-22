@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import { supabase, logActivity } from '../lib/supabase'
 import { useApp } from '../App'
 import { StageBadge, PriorityBadge } from '../components/ui'
+import { DOCS, waLink, mailtoLink, outlookLink, buildMessage, waNumber } from '../lib/docs'
 import {
   STAGES, PRE_SURVEY_STAGES, LOST_REASONS, CONTACT_METHODS, CAD_STATUSES, FILE_CATEGORIES,
   derive, fmtDate, money, selectionBand, MAX_FOLLOW_UPS, today,
@@ -122,6 +123,7 @@ export default function LeadDetail() {
               <div className="contact-row">
                 {lead.phone && <a href={`tel:${lead.phone}`}>📞 {lead.phone}</a>}
                 {lead.phone && <a href={`sms:${lead.phone}`}>💬 Text</a>}
+                {waNumber(lead.phone) && <a href={`https://wa.me/${waNumber(lead.phone)}`} target="_blank" rel="noreferrer">🟢 WhatsApp</a>}
                 {lead.email && <a href={`mailto:${lead.email}`}>✉️ {lead.email}</a>}
               </div>
             </div>
@@ -165,6 +167,7 @@ export default function LeadDetail() {
 
       <div className="tabs" role="tablist">
         {[['timeline', 'Timeline'], ['followups', `Follow-ups (${followUps.length})`], ['survey', 'Survey'],
+          ['send', 'Send Docs'],
           ['selection', 'Selection Form'], ['cad', 'CAD'], ['quote', 'Quote'], ['files', `Files (${files.length})`], ['notes', 'Notes']]
           .map(([k, label]) => (
             <button key={k} className={tab === k ? 'on' : ''} onClick={() => setTab(k)}>{label}</button>
@@ -174,6 +177,7 @@ export default function LeadDetail() {
       {tab === 'timeline' && <Timeline activity={activity} lead={lead} />}
       {tab === 'followups' && <FollowUps lead={lead} followUps={followUps} save={save} profile={profile} reload={load} notify={notify} />}
       {tab === 'survey' && <Survey lead={lead} save={save} />}
+      {tab === 'send' && <SendDocs lead={lead} save={save} />}
       {tab === 'selection' && <Selection lead={lead} save={save} d={d} />}
       {tab === 'cad' && <Cad lead={lead} save={save} />}
       {tab === 'quote' && <Quote lead={lead} save={save} />}
@@ -184,6 +188,85 @@ export default function LeadDetail() {
         <button className="btn danger" onClick={deleteLead}>Delete this lead</button>
       </div>
     </>
+  )
+}
+
+/* ---------------- Send Docs ---------------- */
+function SendDocs({ lead, save }) {
+  const [picked, setPicked] = useState(() => new Set())
+  const toggle = k => setPicked(p => {
+    const n = new Set(p); n.has(k) ? n.delete(k) : n.add(k); return n
+  })
+  const chosen = DOCS.filter(d => picked.has(d.key))
+  const hasBrochure = chosen.some(d => !d.selection)
+  const hasForm = chosen.some(d => d.selection)
+
+  // Record what was sent: tick the right boxes, start the chase clock, log it
+  function recordSend(via) {
+    const names = chosen.map(d => d.name).join(', ')
+    const patch = {}
+    if (hasBrochure) patch.brochures_handed = true
+    if (hasForm) {
+      patch.selection_form_sent = true
+      if (!lead.selection_form_sent_date) patch.selection_form_sent_date = today()
+      if (lead.stage === 'Survey Complete') patch.stage = 'Awaiting Selection Form'
+    }
+    save(patch, 'selection_form', `Sent via ${via}: ${names}`)
+  }
+
+  function sendWhatsApp() {
+    if (!chosen.length) return
+    window.open(waLink(lead, chosen), '_blank')
+    recordSend('WhatsApp')
+  }
+  function sendOutlook() {
+    if (!chosen.length) return
+    window.open(outlookLink(lead, chosen), '_blank')
+    recordSend('Outlook')
+  }
+  function sendMail() {
+    if (!chosen.length) return
+    window.location.href = mailtoLink(lead, chosen)
+    recordSend('email')
+  }
+
+  return (
+    <div className="card"><div className="card-body">
+      <h2 style={{ marginTop: 0 }}>Send brochures & selection form</h2>
+      <p className="muted small">Tap to select what to send, then choose how. Sending the selection form ticks it as sent and starts the chase clock automatically.</p>
+
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, margin: '14px 0' }}>
+        {DOCS.map(d => (
+          <button key={d.key} type="button"
+            className={`btn ${picked.has(d.key) ? 'gold' : 'ghost'}`}
+            onClick={() => toggle(d.key)}>
+            {picked.has(d.key) ? '✓ ' : ''}{d.name}
+          </button>
+        ))}
+      </div>
+
+      {chosen.length > 0 && (
+        <div className="field">
+          <label>Message preview</label>
+          <textarea readOnly rows="10" value={buildMessage(lead, chosen, { bold: false })} style={{ fontSize: 13 }} />
+        </div>
+      )}
+
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <button className="btn primary" disabled={!chosen.length} onClick={sendWhatsApp}
+          style={{ background: '#25D366', color: '#0a0a0c', borderColor: 'transparent' }}>
+          WhatsApp ({chosen.length})
+        </button>
+        <button className="btn gold" disabled={!chosen.length} onClick={sendOutlook}>
+          Outlook
+        </button>
+        <button className="btn ghost" disabled={!chosen.length} onClick={sendMail}>
+          Mail app
+        </button>
+      </div>
+      {!waNumber(lead.phone) && <p className="muted small" style={{ marginTop: 8 }}>No usable mobile number on this lead — WhatsApp will open so you can pick the contact yourself.</p>}
+      {!lead.email && <p className="muted small" style={{ marginTop: 4 }}>No email on this lead — Outlook/Mail will open blank so you can type the address.</p>}
+    </div></div>
   )
 }
 
