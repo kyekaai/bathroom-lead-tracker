@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase, logActivity } from '../lib/supabase'
 import { useApp } from '../App'
@@ -91,6 +92,48 @@ function LinkBtn({ to, children }) {
   return <button className="btn gold" onClick={() => nav(to)}>{children}</button>
 }
 
+// Quick note — jot a note on a lead without opening it. Logs to the timeline.
+export function QuickNote({ lead }) {
+  const { profile, notify, refresh } = useApp()
+  const [open, setOpen] = useState(false)
+  const [text, setText] = useState('')
+  const [busy, setBusy] = useState(false)
+
+  async function save() {
+    const note = text.trim()
+    if (!note) return
+    setBusy(true)
+    // Touch the lead so the idle badge resets and everyone's screens refresh
+    await supabase.from('leads').update({ updated_at: new Date().toISOString() }).eq('id', lead.id)
+    await logActivity(lead.id, 'note', note, profile?.name)
+    setBusy(false)
+    setOpen(false); setText('')
+    await refresh()
+    notify('Note added ✓')
+  }
+
+  return (
+    <>
+      <button type="button" className="note-btn" title="Add a quick note"
+        onClick={e => { e.stopPropagation(); setOpen(true) }}>✎</button>
+      {open && (
+        <div className="qn-overlay" onClick={e => { e.stopPropagation(); setOpen(false) }}>
+          <div className="qn-box" onClick={e => e.stopPropagation()}>
+            <b>Note on {lead.customer_name}</b>
+            <textarea rows="3" autoFocus value={text} onChange={e => setText(e.target.value)}
+              placeholder="e.g. Left voicemail · customer on holiday until 1st Aug"
+              onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) save(); if (e.key === 'Escape') setOpen(false) }} />
+            <div className="qn-actions">
+              <button type="button" className="btn sm gold" disabled={busy || !text.trim()} onClick={save}>{busy ? 'Saving…' : 'Save note'}</button>
+              <button type="button" className="btn sm ghost" onClick={() => setOpen(false)}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  )
+}
+
 export function LeadCard({ lead }) {
   const nav = useNavigate()
   const d = derive(lead)
@@ -113,7 +156,10 @@ export function LeadCard({ lead }) {
       <div className="action"><b>Next action</b>{d.nextAction}</div>
       <div className="foot">
         <span>{d.dSurvey !== null ? `${d.dSurvey}d since survey` : 'No survey date'}</span>
-        <span>{money(lead.quote_value ?? lead.estimated_value)}</span>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+          {money(lead.quote_value ?? lead.estimated_value)}
+          <QuickNote lead={lead} />
+        </span>
       </div>
     </div>
   )
