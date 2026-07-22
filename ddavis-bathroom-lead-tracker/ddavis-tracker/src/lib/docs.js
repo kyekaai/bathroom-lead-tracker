@@ -59,3 +59,59 @@ export function outlookLink(lead, docs) {
   const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent || '')
   return isMobile ? `ms-outlook://compose?${qs}` : `https://outlook.office.com/mail/deeplink/compose?${qs}`
 }
+
+// ============================================================
+// Quick email templates — pre-written emails for common jobs.
+// Edit the wording here; {first} is the customer's first name.
+// ============================================================
+
+const SELECTION_URL = DOCS.find(d => d.selection)?.url
+const SIGN_OFF = '\n\nMany thanks,\nDD Davis Ltd\n01274 481302'
+
+function firstName(lead) {
+  return (lead.customer_name || '').trim().split(/\s+/)[0] || 'there'
+}
+
+export const EMAIL_TEMPLATES = [
+  {
+    key: 'confirm_survey',
+    label: 'Confirm survey appointment',
+    subject: 'Your bathroom survey — DD Davis Ltd',
+    body: (lead, fmtDate) =>
+      `Hi ${firstName(lead)},\n\nJust confirming your bathroom survey${lead.survey_completed_date ? ` on ${fmtDate(lead.survey_completed_date)}` : ''}. ` +
+      `Our surveyor will visit to measure up, talk through what you're looking to achieve, and answer any questions you have.\n\n` +
+      `If you need to change the date or time, just give us a call.` + SIGN_OFF,
+  },
+  {
+    key: 'chase_selection',
+    label: 'Chase selection form',
+    subject: 'Your bathroom selection form — DD Davis Ltd',
+    body: lead =>
+      `Hi ${firstName(lead)},\n\nHope you're well. Just a gentle reminder about your bathroom selection form — once we have this back we can accurately price your project and get your CAD designs underway.\n\n` +
+      `You can fill it in here:\n${SELECTION_URL}\n\n` +
+      `If you have any questions or would like a hand choosing, we're happy to help.` + SIGN_OFF,
+  },
+  {
+    key: 'follow_up_quote',
+    label: 'Follow up quote',
+    subject: 'Your bathroom quote — DD Davis Ltd',
+    body: lead =>
+      `Hi ${firstName(lead)},\n\nJust following up on the bathroom quote we sent over. If you have any questions, or you'd like to talk through options, styles or budgets, we're happy to help.\n\n` +
+      `We also offer finance over 3\u201310 years if that's of interest \u2014 you can see what your monthly payments would look like here:\nhttps://dddavis.co.uk/finance/` + SIGN_OFF,
+  },
+]
+
+function composeQs(lead, subject, body) {
+  return `to=${encodeURIComponent(lead.email || '')}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
+}
+
+export function templateOutlook(lead, tpl, fmtDate) {
+  const qs = composeQs(lead, tpl.subject, tpl.body(lead, fmtDate))
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent || '')
+  return isMobile ? `ms-outlook://compose?${qs}` : `https://outlook.office.com/mail/deeplink/compose?${qs}`
+}
+
+export function templateMailto(lead, tpl, fmtDate) {
+  const body = tpl.body(lead, fmtDate)
+  return `mailto:${lead.email || ''}?subject=${encodeURIComponent(tpl.subject)}&body=${encodeURIComponent(body)}`
+}
