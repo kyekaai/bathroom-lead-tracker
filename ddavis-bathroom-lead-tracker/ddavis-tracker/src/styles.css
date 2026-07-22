@@ -422,3 +422,6 @@ table.data tr.click:hover td { background: var(--surface-2); }
 .form-grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0 16px; }
 @media (max-width: 860px) { .form-grid3 { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 560px) { .form-grid3 { grid-template-columns: 1fr; } }
+
+/* Sidebar brand logo */
+.brand-logo { display: block; width: 100%; max-width: 192px; height: auto; }
