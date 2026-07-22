@@ -97,7 +97,8 @@ function Layout({ children }) {
       {open && <div className="scrim" onClick={() => setOpen(false)} />}
       <aside className={`sidebar ${open ? 'open' : ''}`}>
         <div className="brand">
-          <img src="/logo.png" alt="DD Davis Limited — Built on trust. Driven by quality." className="brand-logo" />
+          <img src="/logo.png" alt="DD Davis Limited — Built on trust. Driven by quality." className="brand-logo"
+            style={{ display: 'block', width: '100%', maxWidth: 160, height: 'auto' }} />
         </div>
         <nav className="nav">
           {NAV.map((n, i) => n.group
