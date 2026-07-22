@@ -499,3 +499,35 @@ html, body {
   border: 1.5px dashed var(--border-strong); border-radius: 10px; padding: 18px 10px;
   text-align: center; font-size: 12px; color: var(--text-muted);
 }
+
+/* ============================================================
+   QUICK NOTE + ACTIVITY FEED
+   ============================================================ */
+.note-btn {
+  width: 24px; height: 24px; border-radius: 50%; border: 1px solid var(--border-strong);
+  background: var(--surface-2); color: var(--text-secondary); font-size: 12px; line-height: 1;
+  cursor: pointer; transition: color 150ms ease, border-color 150ms ease;
+}
+.note-btn:hover { color: var(--accent); border-color: var(--accent); }
+.qn-overlay {
+  position: fixed; inset: 0; z-index: 90; background: rgba(0,0,0,0.55);
+  display: flex; align-items: center; justify-content: center; padding: 16px;
+}
+.qn-box {
+  width: min(440px, 94vw); background: var(--surface); border: 1px solid var(--border-strong);
+  border-radius: var(--radius); padding: 16px; box-shadow: 0 16px 48px rgba(0,0,0,0.5);
+}
+.qn-box b { font-size: 14px; }
+.qn-box textarea { width: 100%; margin: 10px 0 12px; }
+.qn-actions { display: flex; gap: 8px; }
+
+.feed .feed-item {
+  display: flex; gap: 10px; align-items: flex-start; padding: 9px 0;
+  border-bottom: 1px solid var(--border); text-decoration: none;
+}
+.feed .feed-item:last-child { border-bottom: 0; }
+.feed .feed-item .dot { margin-top: 5px; flex-shrink: 0; }
+.feed .feed-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.feed .feed-text > span:first-child { font-size: 13px; color: var(--text); }
+.feed .feed-text b { font-weight: 700; }
+.feed .feed-item:hover .feed-text > span:first-child { color: var(--accent); }
