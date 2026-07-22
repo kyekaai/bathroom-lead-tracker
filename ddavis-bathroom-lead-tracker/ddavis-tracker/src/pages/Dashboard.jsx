@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import { useApp } from '../App'
+import { supabase } from '../lib/supabase'
 import { Stat, StageBadge } from '../components/ui'
 import { buildTodaysActions, derive, money, fmtDate } from '../lib/logic'
 
@@ -13,6 +14,22 @@ const GROUPS = [
   { key: 'quoted', label: 'Quoted', color: 'var(--stage-quoted)', stages: ['Quote Sent', 'Quote Follow Up'] },
   { key: 'won', label: 'Won', color: 'var(--stage-won)', stages: ['Won'] },
 ]
+
+
+// "5 mins ago" style timestamps for the activity feed
+function timeAgo(ts) {
+  const s = Math.floor((Date.now() - new Date(ts).getTime()) / 1000)
+  if (s < 60) return 'just now'
+  const m = Math.floor(s / 60); if (m < 60) return `${m} min${m === 1 ? '' : 's'} ago`
+  const h = Math.floor(m / 60); if (h < 24) return `${h} hour${h === 1 ? '' : 's'} ago`
+  const d = Math.floor(h / 24); if (d < 7) return `${d} day${d === 1 ? '' : 's'} ago`
+  return new Date(ts).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })
+}
+
+const FEED_DOT = {
+  stage: 'blue', cad: 'purple', quote: 'gold', email: 'gold', selection_form: 'gold',
+  follow_up: 'amber', note: 'grey', created: 'teal', import: 'teal', survey: 'blue', file: 'grey',
+}
 
 // Count-up animation for the hero number (~700ms, respects reduced motion)
 function useCountUp(target) {
@@ -37,6 +54,15 @@ function useCountUp(target) {
 
 export default function Dashboard() {
   const { leads, loading, profile } = useApp()
+  const [feed, setFeed] = useState([])
+
+  // Latest team activity — refetches whenever anything changes (realtime refresh updates `leads`)
+  useEffect(() => {
+    supabase.from('activity')
+      .select('id, lead_id, type, message, actor, created_at, leads(customer_name)')
+      .order('created_at', { ascending: false }).limit(12)
+      .then(({ data }) => setFeed(data || []))
+  }, [leads])
 
   const active = leads.filter(l => l.stage !== 'Won' && l.stage !== 'Lost')
   const won = leads.filter(l => l.stage === 'Won')
@@ -178,26 +204,20 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Recently updated */}
+        {/* Live team activity feed */}
         <div className="card">
-          <div className="card-head"><h2>Recently updated</h2><Link className="btn sm ghost" to="/leads">All leads</Link></div>
-          <div className="card-body" style={{ paddingTop: 8 }}>
-            {recent.map(l => {
-              const d = derive(l)
-              return (
-                <Link key={l.id} to={`/leads/${l.id}`} className="spread" style={{ padding: '10px 0', textDecoration: 'none', borderBottom: '1px solid var(--border)' }}>
-                  <div>
-                    <b style={{ fontSize: 13.5 }}>{l.customer_name}</b>
-                    <div className="muted small">{d.nextAction}</div>
-                  </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <StageBadge stage={l.stage} />
-                    <div className="muted small">{fmtDate(l.updated_at)}</div>
-                  </div>
-                </Link>
-              )
-            })}
-            {recent.length === 0 && <p className="muted">Nothing here yet.</p>}
+          <div className="card-head"><h2>Latest activity</h2><Link className="btn sm ghost" to="/leads">All leads</Link></div>
+          <div className="card-body feed" style={{ paddingTop: 8 }}>
+            {feed.map(a => (
+              <Link key={a.id} to={`/leads/${a.lead_id}`} className="feed-item">
+                <span className={`dot ${FEED_DOT[a.type] || 'grey'}`} />
+                <div className="feed-text">
+                  <span><b>{a.actor || 'System'}</b> — {a.message}</span>
+                  <span className="muted small">{a.leads?.customer_name || 'Lead'} · {timeAgo(a.created_at)}</span>
+                </div>
+              </Link>
+            ))}
+            {feed.length === 0 && <p className="muted">No activity yet — it will appear here as the team works.</p>}
           </div>
         </div>
       </div>
