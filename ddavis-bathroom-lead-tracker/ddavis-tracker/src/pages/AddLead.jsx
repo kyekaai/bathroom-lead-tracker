@@ -2,12 +2,15 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase, logActivity } from '../lib/supabase'
 import { useApp } from '../App'
-import { BATHROOM_TYPES, LEAD_SOURCES } from '../lib/logic'
+import { BATHROOM_TYPES, LEAD_SOURCES, PRE_SURVEY_STAGES } from '../lib/logic'
+
+const START_STAGES = [...PRE_SURVEY_STAGES, 'Survey Complete']
 
 const BLANK = {
   customer_name: '', address: '', postcode: '', phone: '', email: '',
   lead_source: '', bathroom_type: '', survey_completed_date: new Date().toISOString().slice(0, 10),
   surveyor: '', estimated_value: '', estimated_profit: '', notes: '',
+  stage: 'Survey Complete',
 }
 
 export default function AddLead() {
@@ -20,13 +23,16 @@ export default function AddLead() {
   async function submit(e) {
     e.preventDefault()
     setBusy(true)
+    const surveyDone = f.stage === 'Survey Complete'
     const row = {
       ...f,
       estimated_value: f.estimated_value === '' ? null : Number(f.estimated_value),
       estimated_profit: f.estimated_profit === '' ? null : Number(f.estimated_profit),
-      stage: 'Survey Complete',
-      survey_completed: true,
-      survey_completed_date: f.survey_completed_date || new Date().toISOString().slice(0, 10),
+      survey_completed: surveyDone,
+      // For 'Survey Booked' this holds the booked survey date; blank for earlier stages
+      survey_completed_date: surveyDone
+        ? (f.survey_completed_date || new Date().toISOString().slice(0, 10))
+        : (f.stage === 'Survey Booked' ? f.survey_completed_date || null : null),
       created_by: profile?.id,
     }
     const { data, error } = await supabase.from('leads').insert(row).select().single()
@@ -44,13 +50,17 @@ export default function AddLead() {
         <div>
           <div className="eyebrow">Manual entry</div>
           <h1>Add New Lead</h1>
-          <div className="sub">Add a lead after the survey visit — chasing starts from the survey date.</div>
+          <div className="sub">Add a lead at any point — from a brand-new enquiry through to a completed survey.</div>
         </div>
       </div>
 
       <form className="card" onSubmit={submit} style={{ maxWidth: 860 }}>
         <div className="card-body">
           <div className="form-grid">
+            <div className="field"><label>Where is this lead up to? <span className="req">*</span></label>
+              <select value={f.stage} onChange={e => set('stage', e.target.value)}>
+                {START_STAGES.map(s => <option key={s}>{s}</option>)}
+              </select></div>
             <div className="field"><label>Customer name <span className="req">*</span></label>
               <input required value={f.customer_name} onChange={e => set('customer_name', e.target.value)} /></div>
             <div className="field"><label>Phone</label>
@@ -69,8 +79,12 @@ export default function AddLead() {
               <select value={f.bathroom_type} onChange={e => set('bathroom_type', e.target.value)}>
                 <option value="">Select…</option>{BATHROOM_TYPES.map(s => <option key={s}>{s}</option>)}
               </select></div>
-            <div className="field"><label>Survey date (when the survey was done) <span className="req">*</span></label>
-              <input type="date" required value={f.survey_completed_date} onChange={e => set('survey_completed_date', e.target.value)} /></div>
+            {(f.stage === 'Survey Complete' || f.stage === 'Survey Booked') && (
+              <div className="field">
+                <label>{f.stage === 'Survey Complete' ? <>Survey date (when the survey was done) <span className="req">*</span></> : 'Survey date (when it\u2019s booked for)'}</label>
+                <input type="date" required={f.stage === 'Survey Complete'} value={f.survey_completed_date} onChange={e => set('survey_completed_date', e.target.value)} />
+              </div>
+            )}
             <div className="field"><label>Surveyor</label>
               <input value={f.surveyor} onChange={e => set('surveyor', e.target.value)} placeholder="e.g. Danny" /></div>
             <div className="field"><label>Estimated quote value (£)</label>
