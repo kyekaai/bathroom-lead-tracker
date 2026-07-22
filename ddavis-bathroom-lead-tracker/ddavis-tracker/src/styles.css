@@ -394,3 +394,31 @@ table.data tr.click:hover td { background: var(--surface-2); }
   .stat .n { font-size: 20px; }
   table.data { font-size: 12.5px; }
 }
+
+/* ============================================================
+   ADD NEW LEAD — stage journey picker & sectioned form
+   ============================================================ */
+.stagepick { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 4px 0 6px; }
+.stagepick button {
+  position: relative; text-align: left; padding: 14px 14px 12px;
+  background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px;
+  color: var(--text-secondary); cursor: pointer; font-family: inherit;
+  transition: border-color 150ms ease, background 150ms ease, transform 100ms ease;
+}
+.stagepick button:hover { border-color: var(--border-strong); }
+.stagepick button:active { transform: translateY(1px); }
+.stagepick button:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-ring); }
+.stagepick .sp-dot { display: block; width: 8px; height: 8px; border-radius: 50%; background: var(--neutral); margin-bottom: 10px; transition: background 150ms ease; }
+.stagepick b { display: block; color: var(--text); font-size: 13.5px; margin-bottom: 2px; }
+.stagepick .sp-hint { font-size: 11.5px; color: var(--text-muted); line-height: 1.35; display: block; }
+.stagepick button.on { border-color: var(--sp-color); background: var(--sp-soft); }
+.stagepick button.on .sp-dot { background: var(--sp-color); box-shadow: 0 0 8px var(--sp-color); }
+.stagepick button.on b { color: var(--sp-color); }
+@media (max-width: 720px) { .stagepick { grid-template-columns: 1fr 1fr; } }
+
+.form-section { border-top: 1px solid var(--border); margin-top: 22px; padding-top: 20px; }
+.form-section.first { border-top: 0; margin-top: 10px; padding-top: 0; }
+.fs-eyebrow { font-size: 11px; letter-spacing: 0.09em; text-transform: uppercase; color: var(--text-muted); font-weight: 700; margin-bottom: 14px; }
+.form-grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0 16px; }
+@media (max-width: 860px) { .form-grid3 { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 560px) { .form-grid3 { grid-template-columns: 1fr; } }
