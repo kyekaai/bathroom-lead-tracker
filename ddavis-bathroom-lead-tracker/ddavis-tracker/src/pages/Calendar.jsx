@@ -1,13 +1,13 @@
 import { Link } from 'react-router-dom'
 import { useApp } from '../App'
-import { Empty } from '../components/ui'
+import { Empty, SkeletonRows } from '../components/ui'
 import { fmtDate, today } from '../lib/logic'
 
 // Builds a date-keyed agenda from lead data:
 // follow-ups due · overdue follow-ups · CAD appointments · quote chases · surveys booked
 export default function Calendar() {
   const { leads, loading } = useApp()
-  if (loading) return <p className="muted">Loading…</p>
+  if (loading) return <SkeletonRows n={5} />
 
   const active = leads.filter(l => l.stage !== 'Won' && l.stage !== 'Lost')
   const tasks = []
