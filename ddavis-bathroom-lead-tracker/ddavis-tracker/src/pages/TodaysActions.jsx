@@ -35,7 +35,7 @@ export default function TodaysActions() {
         </div>
       )}
 
-      {total === 0 && <div className="card"><Empty title="All caught up ✓">No selection forms to chase, no overdue follow-ups, no quotes waiting.</Empty></div>}
+      {total === 0 && <div className="card"><Empty title="All caught up ✓">No selection forms to chase, no overdue follow-ups, no designs waiting.</Empty></div>}
 
       {buckets.filter(b => b.items.length > 0).map(b => {
         const items = [...b.items].sort((a, z) => (P_WEIGHT[a.d.priority] ?? 9) - (P_WEIGHT[z.d.priority] ?? 9))
