@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useApp } from '../App'
 import { supabase, logActivity } from '../lib/supabase'
 import { fmtDate, money, isPast, timeAgo } from '../lib/logic'
-import { Empty } from '../components/ui'
+import { Empty, SkeletonCards } from '../components/ui'
 
 const COLS = [
   { key: 'not booked',          label: 'To book',      color: 'var(--stage-quoted)' },
@@ -30,7 +30,7 @@ export default function CadDesigns() {
   const [dragId, setDragId] = useState(null)
   const [overCol, setOverCol] = useState(null)
 
-  if (loading) return <p className="muted">Loading…</p>
+  if (loading) return <SkeletonCards n={6} />
 
   const cadLeads = leads.filter(l =>
     l.cad_required === 'yes' && l.stage !== 'Won' && l.stage !== 'Lost' && l.cad_status !== 'not required')
