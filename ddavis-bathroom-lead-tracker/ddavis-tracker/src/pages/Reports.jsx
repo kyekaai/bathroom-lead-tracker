@@ -10,6 +10,39 @@ import {
 const GOLD = '#f3ab2d', GREEN = '#34d399', RED = '#f87171', BLUE = '#4f9dff', GREY = '#9a9aa4', AMBER = '#f3ab2d', PURPLE = '#b98bff'
 const PIE = [GOLD, BLUE, GREEN, PURPLE, RED, GREY, '#7dd3fc', '#fda4af']
 
+
+// Gradient fills for the charts
+function ChartDefs() {
+  return (
+    <defs>
+      <linearGradient id="gGold" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor="#f3ab2d" stopOpacity="1" />
+        <stop offset="100%" stopColor="#f3ab2d" stopOpacity="0.25" />
+      </linearGradient>
+      <linearGradient id="gGoldH" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%" stopColor="#f3ab2d" stopOpacity="0.35" />
+        <stop offset="100%" stopColor="#f3ab2d" stopOpacity="1" />
+      </linearGradient>
+      <linearGradient id="gBlue" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor="#4f9dff" stopOpacity="1" />
+        <stop offset="100%" stopColor="#4f9dff" stopOpacity="0.25" />
+      </linearGradient>
+      <linearGradient id="gGreen" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor="#34d399" stopOpacity="1" />
+        <stop offset="100%" stopColor="#34d399" stopOpacity="0.25" />
+      </linearGradient>
+      <linearGradient id="gRed" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor="#fb7185" stopOpacity="1" />
+        <stop offset="100%" stopColor="#fb7185" stopOpacity="0.25" />
+      </linearGradient>
+      <linearGradient id="gLine" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor="#f3ab2d" stopOpacity="0.35" />
+        <stop offset="100%" stopColor="#f3ab2d" stopOpacity="0" />
+      </linearGradient>
+    </defs>
+  )
+}
+
 export default function Reports() {
   const { leads } = useApp()
   const [range, setRange] = useState('month') // week | month | all
@@ -111,7 +144,7 @@ export default function Reports() {
             <ResponsiveContainer>
               <BarChart data={funnel} layout="vertical" margin={{ left: 10 }}>
                 <XAxis type="number" allowDecimals={false} /><YAxis type="category" dataKey="name" width={80} />
-                <Tooltip /><Bar dataKey="n" fill={GOLD} radius={[0, 6, 6, 0]} />
+                <ChartDefs /><Tooltip cursor={{ fill: 'rgba(255,255,255,0.04)' }} /><Bar dataKey="n" fill="url(#gGoldH)" radius={[0, 8, 8, 0]} animationDuration={900} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -137,7 +170,7 @@ export default function Reports() {
             <ResponsiveContainer>
               <BarChart data={[{ name: range === 'all' ? 'All time' : `Last ${range}`, Won: won.length, Lost: lost.length }]}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.07)" /><XAxis dataKey="name" /><YAxis allowDecimals={false} /><Tooltip /><Legend />
-                <Bar dataKey="Won" fill={GREEN} radius={[6, 6, 0, 0]} /><Bar dataKey="Lost" fill={RED} radius={[6, 6, 0, 0]} />
+                <ChartDefs /><Bar dataKey="Won" fill="url(#gGreen)" radius={[8, 8, 0, 0]} animationDuration={900} /><Bar dataKey="Lost" fill="url(#gRed)" radius={[8, 8, 0, 0]} animationDuration={900} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -148,7 +181,7 @@ export default function Reports() {
               <LineChart data={monthly}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.07)" /><XAxis dataKey="label" /><YAxis tickFormatter={v => '£' + (v / 1000) + 'k'} />
                 <Tooltip formatter={v => money(v)} />
-                <Line type="monotone" dataKey="revenue" stroke={GOLD} strokeWidth={2.5} dot />
+                <ChartDefs /><Line type="monotone" dataKey="revenue" stroke={GOLD} strokeWidth={3} dot={{ r: 4, fill: GOLD, strokeWidth: 0 }} activeDot={{ r: 6 }} animationDuration={900} />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -161,7 +194,7 @@ export default function Reports() {
             <ResponsiveContainer>
               <BarChart data={cadProgress}>
                 <XAxis dataKey="name" tick={{ fontSize: 10 }} interval={0} /><YAxis allowDecimals={false} /><Tooltip />
-                <Bar dataKey="n" fill={BLUE} radius={[6, 6, 0, 0]} />
+                <ChartDefs /><Bar dataKey="n" fill="url(#gBlue)" radius={[8, 8, 0, 0]} animationDuration={900} />
               </BarChart>
             </ResponsiveContainer>
           </div>
