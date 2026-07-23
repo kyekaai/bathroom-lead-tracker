@@ -40,6 +40,7 @@ export default function AddLead() {
         ? (f.survey_completed_date || new Date().toISOString().slice(0, 10))
         : (f.stage === 'Survey Booked' ? f.survey_completed_date || null : null),
       created_by: profile?.id,
+      stage_changed_at: new Date().toISOString(),
     }
     const { data, error } = await supabase.from('leads').insert(row).select().single()
     setBusy(false)
