@@ -55,6 +55,13 @@ function useCountUp(target) {
 export default function Dashboard() {
   const { leads, loading, profile } = useApp()
   const [feed, setFeed] = useState([])
+  const [welcome, setWelcome] = useState(() => {
+    try { return !localStorage.getItem('dd-welcome-dismissed') } catch { return false }
+  })
+  const dismissWelcome = () => {
+    setWelcome(false)
+    try { localStorage.setItem('dd-welcome-dismissed', '1') } catch { /* private mode */ }
+  }
 
   // Latest team activity — refetches whenever anything changes (realtime refresh updates `leads`)
   useEffect(() => {
@@ -113,6 +120,13 @@ export default function Dashboard() {
 
   return (
     <>
+      {welcome && (
+        <div className="welcome-banner">
+          <span>👋 Welcome{profile?.name ? `, ${profile.name.split(' ')[0]}` : ''}! The tracker gets regular upgrades — see what\u2019s changed on the <Link to="/whats-new">What\u2019s New</Link> page.</span>
+          <button onClick={dismissWelcome} aria-label="Dismiss">✕</button>
+        </div>
+      )}
+
       <div className="page-head">
         <div>
           <div className="eyebrow">Overview</div>
