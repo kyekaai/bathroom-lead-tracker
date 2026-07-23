@@ -317,30 +317,47 @@ export function guessMapping(headers) {
 }
 
 // ---------- lead health score (0–100) ----------
-// One number for "how is this lead doing" — drives the ring on lead cards.
-export function healthScore(lead) {
-  if (lead.stage === 'Won') return 100
-  if (lead.stage === 'Lost') return 0
+// Returns { score, reasons } — score drives the ring, reasons power the tooltip.
+export function healthBreakdown(lead) {
+  if (lead.stage === 'Won') return { score: 100, reasons: [{ label: 'Lead won', good: true }] }
+  if (lead.stage === 'Lost') return { score: 0, reasons: [{ label: 'Lead lost', good: false }] }
   let s = 100
+  const reasons = []
   const dSurvey = daysSince(lead.survey_completed_date)
   if (lead.survey_completed && !lead.selection_form_returned) {
     const band = selectionBand(dSurvey)
-    if (band === 'amber') s -= 15
-    else if (band === 'red') s -= 30
-    else if (band === 'critical') s -= 45
+    if (band === 'amber')    { s -= 15; reasons.push({ label: `Selection form not back (${dSurvey}d)`, good: false }) }
+    else if (band === 'red') { s -= 30; reasons.push({ label: `Selection form overdue (${dSurvey}d)`, good: false }) }
+    else if (band === 'critical') { s -= 45; reasons.push({ label: `Selection form critically overdue (${dSurvey}d)`, good: false }) }
+    else reasons.push({ label: 'Awaiting selection form — on track', good: true })
   }
-  s -= Math.min((lead.chase_attempts || 0) * 6, 30)
+  const chases = lead.chase_attempts || 0
+  if (chases > 0) {
+    const pen = Math.min(chases * 6, 30); s -= pen
+    reasons.push({ label: `${chases} unanswered chase${chases === 1 ? '' : 's'} (-${pen}pts)`, good: false })
+  }
   const dQuote = daysSince(lead.quote_sent_date)
   if (lead.quote_sent && !lead.quote_outcome && dQuote !== null) {
-    if (dQuote > 10) s -= 25
-    else if (dQuote > 3) s -= 15
+    if (dQuote > 10)     { s -= 25; reasons.push({ label: `Quote sent ${dQuote}d ago — no response`, good: false }) }
+    else if (dQuote > 3) { s -= 15; reasons.push({ label: `Quote sent ${dQuote}d ago — chasing`, good: false }) }
+    else reasons.push({ label: `Quote sent ${dQuote}d ago`, good: true })
   }
-  if (isPast(lead.next_chase_date) || isPast(lead.next_quote_chase_date)) s -= 15
+  if (isPast(lead.next_chase_date)) { s -= 15; reasons.push({ label: 'Chase date overdue', good: false }) }
+  else if (lead.next_chase_date) reasons.push({ label: 'Chase date set', good: true })
   const idle = daysSince(lead.updated_at)
-  if (idle !== null) { if (idle >= 14) s -= 20; else if (idle >= 7) s -= 10 }
-  if (lead.stage === 'New Enquiry' && (daysSince(lead.created_at) ?? 0) >= 3) s -= 20
-  return Math.max(5, Math.min(95, s))
+  if (idle !== null) {
+    if (idle >= 14)     { s -= 20; reasons.push({ label: `No activity for ${idle} days`, good: false }) }
+    else if (idle >= 7) { s -= 10; reasons.push({ label: `${idle} days since last activity`, good: false }) }
+    else reasons.push({ label: `Active (last update ${idle}d ago)`, good: true })
+  }
+  if (lead.stage === 'New Enquiry' && (daysSince(lead.created_at) ?? 0) >= 3) {
+    s -= 20; reasons.push({ label: 'New enquiry not contacted within 3 days', good: false })
+  }
+  if (reasons.length === 0) reasons.push({ label: 'All good — no issues', good: true })
+  return { score: Math.max(5, Math.min(95, s)), reasons }
 }
+
+export function healthScore(lead) { return healthBreakdown(lead).score }
 
 export function healthColor(score) {
   return score >= 70 ? 'var(--stage-won)' : score >= 40 ? 'var(--stage-quoted)' : 'var(--stage-lost)'
