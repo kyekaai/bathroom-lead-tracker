@@ -59,7 +59,7 @@ export default function Leads() {
     if (!bulkStage || sel.size === 0) return
     setBusy(true)
     const ids = [...sel]
-    const patch = { stage: bulkStage }
+    const patch = { stage: bulkStage, stage_changed_at: new Date().toISOString() }
     if (PRE_SURVEY_STAGES.includes(bulkStage)) patch.survey_completed = false
     if (bulkStage === 'Survey Complete') patch.survey_completed = true
     if (bulkStage === 'Won') patch.quote_outcome = 'accepted'
