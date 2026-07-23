@@ -106,7 +106,7 @@ export default function LeadDetail() {
   return (
     <>
       <div className="small" style={{ marginBottom: 10 }}>
-        <Link to="/leads" className="muted" style={{ textDecoration: 'none' }}>← All Leads</Link>
+        <Link to="/leads" className="muted back-link" style={{ textDecoration: 'none' }}>← All Leads</Link>
       </div>
 
       <div className="card" style={{ marginBottom: 14 }}>
@@ -233,7 +233,7 @@ export default function LeadDetail() {
 
       <JobSheet lead={lead} d={d} />
 
-      <div style={{ marginTop: 24, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'flex-end' }}>
+      <div className="danger-zone" style={{ marginTop: 24, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'flex-end' }}>
         <button className="btn danger" onClick={deleteLead}>Delete this lead</button>
       </div>
     </>
