@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useApp } from '../App'
+import { SkeletonRows } from '../components/ui'
 
 const ROLES = ['management', 'admin', 'designer', 'staff']
 
@@ -18,7 +19,7 @@ export default function Users() {
     notify(error ? 'Could not update role' : 'Role updated ✓'); load()
   }
 
-  if (!users) return <p className="muted">Loading…</p>
+  if (!users) return <SkeletonRows n={4} />
 
   return (
     <>
