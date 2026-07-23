@@ -80,10 +80,55 @@ export function Stat({ n, label, tone = '' }) {
   )
 }
 
-export function Empty({ title, children, icon = '📋', cta, ctaTo }) {
+
+// Shimmering placeholders shown while data loads — feels faster than "Loading…"
+export function SkeletonCards({ n = 6 }) {
+  return (
+    <div className="sk-cards" aria-busy="true" aria-label="Loading">
+      {Array.from({ length: n }).map((_, i) => (
+        <div className="card sk-card" key={i}>
+          <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 14 }}>
+            <div className="sk ring" />
+            <div style={{ flex: 1 }}>
+              <div className="sk line w60" />
+              <div className="sk line w80" />
+            </div>
+          </div>
+          <div className="sk line w40" />
+          <div className="sk line" style={{ height: 34 }} />
+        </div>
+      ))}
+    </div>
+  )
+}
+
+export function SkeletonRows({ n = 5 }) {
+  return (
+    <div className="card" aria-busy="true" aria-label="Loading">
+      <div className="card-body">
+        {Array.from({ length: n }).map((_, i) => (
+          <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'center', padding: '10px 0' }}>
+            <div className="sk ring" style={{ width: 30, height: 30 }} />
+            <div style={{ flex: 1 }}><div className="sk line w40" /><div className="sk line w80" style={{ marginBottom: 0 }} /></div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+export function Empty({ title, children, icon, cta, ctaTo }) {
   return (
     <div className="empty">
-      <span className="empty-icon" aria-hidden>{icon}</span>
+      {icon
+        ? <span className="empty-icon" aria-hidden>{icon}</span>
+        : <svg viewBox="0 0 120 120" fill="none" stroke="var(--accent)" strokeWidth="2.4"
+            strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <rect x="26" y="20" width="68" height="84" rx="8" strokeOpacity=".55" />
+            <path d="M40 42h40M40 56h40M40 70h26" strokeOpacity=".35" />
+            <circle cx="82" cy="80" r="20" fill="var(--bg)" />
+            <path d="M74 80l6 6 12-12" />
+          </svg>}
       <b>{title}</b>{children}
       {cta && <div><LinkBtn to={ctaTo}>{cta}</LinkBtn></div>}
     </div>
