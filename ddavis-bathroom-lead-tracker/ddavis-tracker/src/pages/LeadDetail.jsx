@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { supabase, logActivity } from '../lib/supabase'
 import { useApp } from '../App'
@@ -7,7 +7,7 @@ import { DOCS, waLink, mailtoLink, outlookLink, buildMessage, waNumber, EMAIL_TE
 import { fireConfetti } from '../lib/confetti'
 import {
   STAGES, PRE_SURVEY_STAGES, STAGE_TO_CAD, LOST_REASONS, CONTACT_METHODS, CAD_STATUSES, FILE_CATEGORIES,
-  derive, fmtDate, money, selectionBand, MAX_FOLLOW_UPS, today,
+  derive, fmtDate, money, selectionBand, MAX_FOLLOW_UPS, today, stageAge, stampStage, timeAgo,
 } from '../lib/logic'
 
 const MAIN_STEPS = ['Enquiry', 'Survey', 'Selection Form', 'CAD', 'Quote', 'Won/Lost']
@@ -42,8 +42,13 @@ export default function LeadDetail() {
 
   useEffect(() => { load() }, [load])
 
+  const leadRef = useRef(null)
+  useEffect(() => { leadRef.current = lead }, [lead])
+
   // Save a partial update + timeline entry, then reload.
-  const save = useCallback(async (patch, type, message) => {
+  const save = useCallback(async (rawPatch, type, message) => {
+    // Stamp when the stage actually changes so "time in stage" stays accurate
+    const patch = stampStage(rawPatch, leadRef.current)
     const { error } = await supabase.from('leads').update(patch).eq('id', id)
     if (error) return notify('Save failed — ' + error.message)
     if (message) await logActivity(id, type, message, profile?.name)
@@ -147,7 +152,15 @@ export default function LeadDetail() {
             <div className="action" style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
               <span>
                 <b>Next action</b>{d.nextAction}
-                {d.dSurvey !== null && !lead.selection_form_returned && lead.stage !== 'Won' && lead.stage !== 'Lost' && (
+                {(() => {
+                const sa = stageAge(lead)
+                if (sa.days === null || lead.stage === 'Won' || lead.stage === 'Lost') return null
+                return <span className={`badge ${sa.over ? 'red' : 'grey'}`} style={{ marginLeft: 8 }}
+                  title={sa.target ? `Target for this stage: ${sa.target} days` : ''}>
+                  {sa.days}d in {lead.stage}{sa.over ? ' ⚠' : ''}
+                </span>
+              })()}
+              {d.dSurvey !== null && !lead.selection_form_returned && lead.stage !== 'Won' && lead.stage !== 'Lost' && (
                   <span className={`badge ${selectionBand(d.dSurvey) === 'normal' ? 'grey' : selectionBand(d.dSurvey)}`} style={{ marginLeft: 8 }}>
                     {d.dSurvey} days since survey
                   </span>
@@ -171,7 +184,7 @@ export default function LeadDetail() {
 
       <div className="tabs" role="tablist">
         {[['timeline', 'Timeline'], ['followups', `Follow-ups (${followUps.length})`], ['survey', 'Survey'],
-          ['send', 'Send Docs'],
+          ['send', 'Send Docs'], ['comms', 'Comms Log'],
           ['selection', 'Selection Form'], ['cad', 'CAD'], ['quote', 'Quote'], ['files', `Files (${files.length})`], ['notes', 'Notes']]
           .map(([k, label]) => (
             <button key={k} className={tab === k ? 'on' : ''} onClick={() => setTab(k)}>{label}</button>
@@ -182,8 +195,9 @@ export default function LeadDetail() {
       {tab === 'followups' && <FollowUps lead={lead} followUps={followUps} save={save} profile={profile} reload={load} notify={notify} />}
       {tab === 'survey' && <Survey lead={lead} save={save} />}
       {tab === 'send' && <SendDocs lead={lead} save={save} />}
+      {tab === 'comms' && <CommsLog lead={lead} followUps={followUps} activity={activity} />}
       {tab === 'selection' && <Selection lead={lead} save={save} d={d} />}
-      {tab === 'cad' && <Cad lead={lead} save={save} />}
+      {tab === 'cad' && <Cad lead={lead} save={save} files={files} profile={profile} reload={load} notify={notify} />}
       {tab === 'quote' && <Quote lead={lead} save={save} />}
       {tab === 'files' && <Files lead={lead} files={files} profile={profile} reload={load} notify={notify} />}
       {tab === 'notes' && <Notes lead={lead} save={save} />}
@@ -297,6 +311,64 @@ function SendDocs({ lead, save }) {
       </table>
     </div></div>
     </>
+  )
+}
+
+/* ---------------- Customer comms log ---------------- */
+// Everything we've actually said to the customer, in one place —
+// follow-ups plus any docs/emails sent. Timeline noise stripped out.
+function CommsLog({ lead, followUps, activity }) {
+  const CONTACT_TYPES = ['email', 'selection_form', 'follow_up', 'note']
+  const isContact = a =>
+    CONTACT_TYPES.includes(a.type) &&
+    /sent|email|whatsapp|called|voicemail|spoke|note|posted|handed/i.test(a.message || '')
+
+  const entries = [
+    ...followUps.map(f => ({
+      id: `fu-${f.id}`, when: f.date, sort: new Date(f.date).getTime(),
+      kind: f.method || 'phone', who: f.staff,
+      what: f.outcome || 'Follow-up logged', extra: f.notes,
+      next: f.next_follow_up_date,
+    })),
+    ...activity.filter(isContact).map(a => ({
+      id: `ac-${a.id}`, when: a.created_at, sort: new Date(a.created_at).getTime(),
+      kind: /whatsapp/i.test(a.message) ? 'whatsapp' : /outlook|email|mail/i.test(a.message) ? 'email' : 'note',
+      who: a.actor, what: a.message,
+    })),
+  ].sort((a, b) => b.sort - a.sort)
+
+  const ICON = { phone: '📞', email: '✉️', whatsapp: '🟢', text: '💬', 'in person': '🤝', note: '📝', post: '📮' }
+
+  return (
+    <div className="card" style={{ maxWidth: 860 }}>
+      <div className="card-head">
+        <h2>Customer communication</h2>
+        <span className="badge grey">{entries.length} contact{entries.length === 1 ? '' : 's'}</span>
+      </div>
+      <div className="card-body">
+        <p className="muted small" style={{ marginTop: 0 }}>
+          Every time we've contacted {lead.customer_name.split(' ')[0]} — newest first.
+          {lead.last_chased_date && <> Last contact {fmtDate(lead.last_chased_date)}.</>}
+        </p>
+        {entries.length === 0
+          ? <p className="muted">No customer contact logged yet. Log chases in Follow-ups, or send brochures from Send Docs.</p>
+          : <ul className="comms">
+              {entries.map(e => (
+                <li key={e.id}>
+                  <span className="c-icon">{ICON[e.kind] || '•'}</span>
+                  <div className="c-body">
+                    <div className="c-what">{e.what}</div>
+                    {e.extra && <div className="c-extra">{e.extra}</div>}
+                    <div className="c-meta">
+                      {fmtDate(e.when)} · {timeAgo(e.when)}{e.who ? ` · by ${e.who}` : ''}
+                      {e.next ? ` · next: ${fmtDate(e.next)}` : ''}
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>}
+      </div>
+    </div>
   )
 }
 
@@ -460,6 +532,9 @@ function Selection({ lead, save, d }) {
     selection_form_sent: lead.selection_form_sent, selection_form_sent_date: lead.selection_form_sent_date || '',
     selection_form_returned: lead.selection_form_returned, selection_form_returned_date: lead.selection_form_returned_date || '',
     next_chase_date: lead.next_chase_date || '',
+    selections_supplier: lead.selections_supplier || '', selections_suite: lead.selections_suite || '',
+    selections_tiles: lead.selections_tiles || '', selections_colours: lead.selections_colours || '',
+    selections_extras: lead.selections_extras || '', selections_notes: lead.selections_notes || '',
   })
   const band = selectionBand(d.dSurvey)
   function submit(e) {
@@ -486,6 +561,27 @@ function Selection({ lead, save, d }) {
         {f.selection_form_returned && <div className="field" style={{ maxWidth: 220 }}><label>Returned date</label><input type="date" value={f.selection_form_returned_date} onChange={e => setF({ ...f, selection_form_returned_date: e.target.value })} /></div>}
         <div className="field" style={{ maxWidth: 220 }}><label>Next chase date</label><input type="date" value={f.next_chase_date} onChange={e => setF({ ...f, next_chase_date: e.target.value })} /></div>
         <p className="muted small">Chase attempts so far: <b>{lead.chase_attempts || 0}</b> · last chased {fmtDate(lead.last_chased_date)}. Log chases in the Follow-ups tab.</p>
+
+        <div className="form-section">
+          <div className="fs-eyebrow">What the customer chose</div>
+          <p className="muted small" style={{ marginTop: -6 }}>Copy the choices off the returned form so everything Crystal needs is on the lead.</p>
+          <div className="form-grid">
+            <div className="field"><label>Supplier</label>
+              <input list="dd-suppliers" value={f.selections_supplier} onChange={e => setF({ ...f, selections_supplier: e.target.value })} placeholder="e.g. Kartell KVIT / Scudo / Giavani" />
+              <datalist id="dd-suppliers"><option>Kartell KVIT</option><option>Scudo</option><option>Giavani</option><option>Mixed</option></datalist></div>
+            <div className="field"><label>Suite / style</label>
+              <input value={f.selections_suite} onChange={e => setF({ ...f, selections_suite: e.target.value })} placeholder="e.g. vanity unit, walk-in shower, bath" /></div>
+            <div className="field"><label>Tiles / panelling</label>
+              <input value={f.selections_tiles} onChange={e => setF({ ...f, selections_tiles: e.target.value })} placeholder="e.g. floor + wall tile refs" /></div>
+            <div className="field"><label>Colours / finish</label>
+              <input value={f.selections_colours} onChange={e => setF({ ...f, selections_colours: e.target.value })} placeholder="e.g. matt black, grey oak" /></div>
+          </div>
+          <div className="field"><label>Extras</label>
+            <input value={f.selections_extras} onChange={e => setF({ ...f, selections_extras: e.target.value })} placeholder="e.g. underfloor heating, niche, towel rail" /></div>
+          <div className="field"><label>Notes for the CAD design</label>
+            <textarea rows="3" value={f.selections_notes} onChange={e => setF({ ...f, selections_notes: e.target.value })} placeholder="Anything Crystal needs to know — layout preferences, things to avoid, customer wishes…" /></div>
+        </div>
+
         <button className="btn gold">Save selection form</button>
       </div>
     </form>
@@ -493,10 +589,10 @@ function Selection({ lead, save, d }) {
 }
 
 /* ---------------- CAD ---------------- */
-function Cad({ lead, save }) {
+function Cad({ lead, save, files, profile, reload, notify }) {
   const [f, setF] = useState({
     cad_required: lead.cad_required, cad_booked_date: lead.cad_booked_date || '',
-    cad_designer: lead.cad_designer || '', cad_status: lead.cad_status,
+    cad_designer: lead.cad_designer || 'Crystal', cad_status: lead.cad_status,
     cad_notes: lead.cad_notes || '', cad_revision_count: lead.cad_revision_count || 0,
     cad_completed_date: lead.cad_completed_date || '',
   })
@@ -528,14 +624,88 @@ function Cad({ lead, save }) {
               {CAD_STATUSES.map(s => <option key={s} value={s}>{s[0].toUpperCase() + s.slice(1)}</option>)}
             </select></div>
           <div className="field"><label>CAD booked date</label><input type="date" value={f.cad_booked_date} onChange={e => setF({ ...f, cad_booked_date: e.target.value })} /></div>
-          <div className="field"><label>CAD designer</label><input value={f.cad_designer} onChange={e => setF({ ...f, cad_designer: e.target.value })} placeholder="e.g. Crystal" /></div>
+          <div className="field"><label>CAD designer</label><input value={f.cad_designer} onChange={e => setF({ ...f, cad_designer: e.target.value })} list="dd-designers" placeholder="e.g. Crystal" />
+            <datalist id="dd-designers"><option>Crystal</option></datalist></div>
           <div className="field"><label>CAD completed date</label><input type="date" value={f.cad_completed_date} onChange={e => setF({ ...f, cad_completed_date: e.target.value })} /></div>
         </div>
         <div className="field"><label>CAD notes</label><textarea rows="3" value={f.cad_notes} onChange={e => setF({ ...f, cad_notes: e.target.value })} /></div>
-        <p className="muted small">Upload CAD drawings, PDFs and screenshots in the <b>Files</b> tab.</p>
         <button className="btn gold">Save CAD</button>
       </div>
+      <CadFiles lead={lead} files={files} profile={profile} reload={reload} notify={notify} />
     </form>
+  )
+}
+
+/* ---------------- CAD drawings (upload + share) ---------------- */
+function CadFiles({ lead, files, profile, reload, notify }) {
+  const [busy, setBusy] = useState(false)
+  const cadFiles = (files || []).filter(f => f.category === 'cad drawing')
+
+  async function upload(e) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setBusy(true)
+    const path = `${lead.id}/${Date.now()}-${file.name}`
+    const { error } = await supabase.storage.from('lead-files').upload(path, file)
+    if (error) { setBusy(false); return notify('Upload failed — ' + error.message) }
+    await supabase.from('lead_files').insert({
+      lead_id: lead.id, file_name: file.name, storage_path: path,
+      category: 'cad drawing', uploaded_by: profile?.id,
+    })
+    await logActivity(lead.id, 'cad', `CAD drawing uploaded: ${file.name}`, profile?.name)
+    setBusy(false); e.target.value = ''
+    await reload(); notify('CAD drawing uploaded ✓')
+  }
+
+  // Signed link that lasts a week — long enough for the customer to look properly
+  async function shareLink(f) {
+    const { data, error } = await supabase.storage.from('lead-files').createSignedUrl(f.storage_path, 60 * 60 * 24 * 7)
+    if (error) { notify('Could not create share link'); return null }
+    return data.signedUrl
+  }
+  async function openFile(f) {
+    const url = await shareLink(f); if (url) window.open(url, '_blank')
+  }
+  async function share(f, how) {
+    const url = await shareLink(f); if (!url) return
+    const first = (lead.customer_name || '').trim().split(/\s+/)[0] || 'there'
+    const msg = `Hi ${first}, here is your bathroom CAD design from DD Davis Ltd. Have a look and let us know what you think — any changes at all, just say.\n\n${url}\n\n(This link works for 7 days.)`
+    if (how === 'whatsapp') {
+      const n = waNumber(lead.phone)
+      window.open(n ? `https://wa.me/${n}?text=${encodeURIComponent(msg)}` : `https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank')
+    } else {
+      const qs = `to=${encodeURIComponent(lead.email || '')}&subject=${encodeURIComponent('Your bathroom CAD design — DD Davis Ltd')}&body=${encodeURIComponent(msg)}`
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent || '')
+      window.open(isMobile ? `ms-outlook://compose?${qs}` : `https://outlook.office.com/mail/deeplink/compose?${qs}`, '_blank')
+    }
+    await logActivity(lead.id, 'cad', `CAD design "${f.file_name}" sent to customer via ${how === 'whatsapp' ? 'WhatsApp' : 'Outlook'}`, profile?.name)
+    await reload()
+  }
+
+  return (
+    <div className="card-body" style={{ borderTop: '1px solid var(--border)' }}>
+      <div className="fs-eyebrow">CAD drawings</div>
+      <div className="field" style={{ maxWidth: 420 }}>
+        <label>Upload a CAD drawing (PDF or image)</label>
+        <input type="file" accept=".pdf,image/*" onChange={upload} disabled={busy} onClick={e => e.stopPropagation()} />
+      </div>
+      {cadFiles.length === 0
+        ? <p className="muted small">No CAD drawings uploaded yet.</p>
+        : <table className="data">
+            <tbody>
+              {cadFiles.map(f => (
+                <tr key={f.id}>
+                  <td><b>{f.file_name}</b><div className="muted small">Uploaded {fmtDate(f.created_at)}</div></td>
+                  <td className="right" style={{ whiteSpace: 'nowrap' }}>
+                    <button type="button" className="btn sm ghost" onClick={() => openFile(f)}>Open</button>
+                    <button type="button" className="btn sm ghost" style={{ marginLeft: 6 }} onClick={() => share(f, 'whatsapp')}>🟢 Send</button>
+                    <button type="button" className="btn sm gold" style={{ marginLeft: 6 }} onClick={() => share(f, 'email')}>✉️ Email</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>}
+    </div>
   )
 }
 
