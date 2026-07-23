@@ -146,7 +146,7 @@ export default function Dashboard() {
       </div>
 
       {/* PIPELINE — segmented funnel bar */}
-      <div className="pipebar">
+      <div className="pipebar animate">
         {groups.map(g => (
           <Link key={g.key} className="seg-wrap" to={g.key === 'won' ? '/leads?stage=Won' : `/leads?group=${g.key}`}>
             <div className="seg-bar" style={{ background: g.color, opacity: 0.25 + 0.75 * (g.n / maxN) }} />
