@@ -2,16 +2,16 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useApp } from '../App'
 import { supabase, logActivity } from '../lib/supabase'
-import { fmtDate, money, isPast } from '../lib/logic'
+import { fmtDate, money, isPast, timeAgo } from '../lib/logic'
 import { Empty } from '../components/ui'
 
 const COLS = [
-  { key: 'not booked',          label: 'To book',                  color: 'var(--stage-quoted)' },
-  { key: 'booked',              label: 'Booked',                   color: 'var(--stage-new)' },
-  { key: 'in progress',         label: 'In progress',              color: 'var(--stage-contact)' },
-  { key: 'sent to customer',    label: 'Sent — awaiting approval', color: 'var(--stage-new)' },
-  { key: 'revisions requested', label: 'Revisions requested',      color: 'var(--stage-lost)' },
-  { key: 'approved',            label: 'Approved',                 color: 'var(--stage-won)' },
+  { key: 'not booked',          label: 'To book',      color: 'var(--stage-quoted)' },
+  { key: 'booked',              label: 'Booked',       color: 'var(--stage-new)' },
+  { key: 'in progress',         label: 'In progress',  color: 'var(--stage-contact)' },
+  { key: 'sent to customer',    label: 'Sent',         color: 'var(--stage-new)' },
+  { key: 'revisions requested', label: 'Revisions',    color: 'var(--stage-lost)' },
+  { key: 'approved',            label: 'Approved',     color: 'var(--stage-won)' },
 ]
 
 // CAD status → lead stage, so the board and the pipeline stay in step
@@ -34,6 +34,7 @@ export default function CadDesigns() {
 
   const cadLeads = leads.filter(l =>
     l.cad_required === 'yes' && l.stage !== 'Won' && l.stage !== 'Lost' && l.cad_status !== 'not required')
+  const totalValue = cadLeads.reduce((s, l) => s + Number(l.quote_value ?? l.estimated_value ?? 0), 0)
 
   async function drop(status) {
     setOverCol(null)
@@ -49,61 +50,67 @@ export default function CadDesigns() {
     notify(`${lead.customer_name} → ${COLS.find(c => c.key === status)?.label} ✓`)
   }
 
-  const initials = name => name.trim().split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase()
-
   return (
     <>
       <div className="page-head">
         <div>
           <div className="eyebrow">Design pipeline</div>
           <h1>CAD Designs</h1>
-          <div className="sub">{cadLeads.length} live CAD job{cadLeads.length === 1 ? '' : 's'} — drag a card to move it, or tap to open the lead.</div>
+          <div className="sub">{cadLeads.length} live CAD job{cadLeads.length === 1 ? '' : 's'} · {money(totalValue)} in design — drag a card to move it, tap to open.</div>
         </div>
       </div>
 
       {cadLeads.length === 0
         ? <div className="card"><Empty title="No CAD work in the pipeline">Mark a lead as "CAD required: yes" and it will appear here.</Empty></div>
-        : <div className="kanban">
+        : <div className="cadboard">
             {COLS.map(c => {
               const items = cadLeads.filter(l => l.cad_status === c.key)
               const value = items.reduce((s, l) => s + Number(l.quote_value ?? l.estimated_value ?? 0), 0)
               return (
-                <div className={`col ${overCol === c.key ? 'drop-over' : ''}`} key={c.key}
+                <div className={`col2 ${overCol === c.key ? 'drop-over' : ''}`} key={c.key}
                   style={{ '--col-color': c.color }}
                   onDragOver={e => { e.preventDefault(); setOverCol(c.key) }}
                   onDragLeave={() => setOverCol(o => o === c.key ? null : o)}
                   onDrop={() => drop(c.key)}>
                   <header>
-                    <span className="col-title">{c.label}</span>
-                    <span className="col-meta">{value > 0 && <em>{money(value)}</em>}<span className="col-count">{items.length}</span></span>
+                    <span className="c2-title">{c.label}</span>
+                    <span className="c2-count">{items.length}</span>
+                    {value > 0 && <span className="c2-value">{money(value)}</span>}
                   </header>
 
-                  {items.map(l => {
-                    const late = c.key === 'booked' && isPast(l.cad_booked_date)
-                    return (
-                      <div className={`kcard ${dragId === l.id ? 'dragging' : ''} ${late ? 'late' : ''}`} key={l.id}
-                        draggable onDragStart={() => setDragId(l.id)} onDragEnd={() => setDragId(null)}
-                        onClick={() => nav(`/leads/${l.id}`)} role="button" tabIndex={0}
-                        onKeyDown={e => e.key === 'Enter' && nav(`/leads/${l.id}`)}>
-                        <b>{l.customer_name}</b>
-                        <div className="k-sub">{[l.postcode, l.bathroom_type].filter(Boolean).join(' · ') || '\u00A0'}</div>
-                        <div className="k-chips">
-                          {l.cad_designer
-                            ? <span className="k-designer"><i>{initials(l.cad_designer)}</i>{l.cad_designer}</span>
-                            : <span className="k-unassigned">⚠ No designer</span>}
-                          {l.cad_revision_count > 0 && <span className="k-rev">rev {l.cad_revision_count}</span>}
-                        </div>
-                        {(l.cad_booked_date || value > 0) && (
-                          <div className="k-foot">
-                            <span>{l.cad_booked_date ? `${late ? '⚠ ' : ''}Booked ${fmtDate(l.cad_booked_date)}` : ''}</span>
-                            <span>{money(l.quote_value ?? l.estimated_value)}</span>
+                  <div className="c2-cards">
+                    {items.map(l => {
+                      const late = c.key === 'booked' && isPast(l.cad_booked_date)
+                      const val = Number(l.quote_value ?? l.estimated_value ?? 0)
+                      return (
+                        <div className={`kcard2 ${dragId === l.id ? 'dragging' : ''}`} key={l.id}
+                          draggable onDragStart={() => setDragId(l.id)} onDragEnd={() => setDragId(null)}
+                          onClick={() => nav(`/leads/${l.id}`)} role="button" tabIndex={0}
+                          onKeyDown={e => e.key === 'Enter' && nav(`/leads/${l.id}`)}>
+                          <div className="k2-top">
+                            <b>{l.customer_name}</b>
+                            {late && <span className="k2-hot">LATE</span>}
                           </div>
-                        )}
-                      </div>
-                    )
-                  })}
-
-                  {items.length === 0 && <div className="k-empty">Drop a card here</div>}
+                          <div className="k2-time">{timeAgo(l.updated_at)}</div>
+                          <div className="k2-rows">
+                            <span>🛁 {l.bathroom_type || 'Bathroom'}</span>
+                            {l.postcode && <span>📍 {l.postcode}</span>}
+                          </div>
+                          {l.cad_booked_date && c.key !== 'approved' &&
+                            <div className={`k2-date ${late ? 'late' : ''}`}>📅 {late ? 'Was booked ' : 'Booked '}{fmtDate(l.cad_booked_date)}</div>}
+                          {val > 0 && <div className="k2-value">{money(val)}</div>}
+                          <div className="k2-chips">
+                            {l.lead_source && <span className="k2-chip">{l.lead_source}</span>}
+                            {l.cad_designer
+                              ? <span className="k2-chip designer">✏️ {l.cad_designer}</span>
+                              : <span className="k2-chip warn">⚠ No designer</span>}
+                            {l.cad_revision_count > 0 && <span className="k2-chip warn">rev {l.cad_revision_count}</span>}
+                          </div>
+                        </div>
+                      )
+                    })}
+                    {items.length === 0 && <div className="k-empty">Drop a card here</div>}
+                  </div>
                 </div>
               )
             })}
