@@ -203,6 +203,7 @@ export default function LeadDetail() {
             {lead.phone && <a className="btn sm ghost" href={`tel:${lead.phone}`}>☎ Call</a>}
             <button className="btn sm ghost" onClick={() => setTab('send')}>📄 Send docs</button>
             <QuickNote lead={lead} label="✎ Add a note" />
+            <button className="btn sm ghost" onClick={() => window.print()}>🖨 Job sheet</button>
             {lead.stage !== 'Won' && lead.stage !== 'Lost' && (
               <button className="btn sm ghost" style={{ marginLeft: 'auto' }}
                 onClick={() => changeStage('Won')}>🏆 Mark Won</button>
@@ -229,6 +230,8 @@ export default function LeadDetail() {
       {tab === 'cad' && <Cad lead={lead} save={save} files={files} profile={profile} reload={load} notify={notify} />}
       {tab === 'files' && <Files lead={lead} files={files} profile={profile} reload={load} notify={notify} />}
       {tab === 'notes' && <Notes lead={lead} save={save} />}
+
+      <JobSheet lead={lead} d={d} />
 
       <div style={{ marginTop: 24, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'flex-end' }}>
         <button className="btn danger" onClick={deleteLead}>Delete this lead</button>
@@ -339,6 +342,77 @@ function SendDocs({ lead, save }) {
       </table>
     </div></div>
     </>
+  )
+}
+
+
+/* ---------------- Printable job sheet ---------------- */
+function JobSheet({ lead, d }) {
+  const row = (k, v) => v ? <div className="js-row"><span>{k}</span><b>{v}</b></div> : null
+  return (
+    <div className="jobsheet" aria-hidden="true">
+      <div className="js-head">
+        <img src="/logo.png" alt="DD Davis Limited" />
+        <div className="js-headr">
+          <b>Bathroom Job Sheet</b>
+          <span>Printed {new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })}</span>
+        </div>
+      </div>
+
+      <h1 className="js-name">{lead.customer_name}</h1>
+      <div className="js-stage">{lead.stage}{lead.bathroom_type ? ` · ${lead.bathroom_type}` : ''}</div>
+
+      <div className="js-cols">
+        <section>
+          <h2>Customer</h2>
+          {row('Address', [lead.address, lead.postcode].filter(Boolean).join(', '))}
+          {row('Phone', lead.phone)}
+          {row('Email', lead.email)}
+          {row('Lead source', lead.lead_source)}
+        </section>
+        <section>
+          <h2>Key dates</h2>
+          {row('Survey', fmtDate(lead.survey_completed_date))}
+          {row('Surveyor', lead.surveyor)}
+          {row('Form sent', fmtDate(lead.selection_form_sent_date))}
+          {row('Form returned', fmtDate(lead.selection_form_returned_date))}
+          {row('CAD booked', fmtDate(lead.cad_booked_date))}
+          {row('CAD designer', lead.cad_designer)}
+        </section>
+      </div>
+
+      <section>
+        <h2>Customer selections</h2>
+        <div className="js-cols">
+          <div>
+            {row('Supplier', lead.selections_supplier)}
+            {row('Suite / style', lead.selections_suite)}
+            {row('Tiles / panelling', lead.selections_tiles)}
+          </div>
+          <div>
+            {row('Colours / finish', lead.selections_colours)}
+            {row('Extras', lead.selections_extras)}
+            {row('CAD status', lead.cad_status)}
+          </div>
+        </div>
+        {lead.selections_notes && <div className="js-notes"><b>Notes for the design</b><p>{lead.selections_notes}</p></div>}
+        {!lead.selections_supplier && !lead.selections_suite && !lead.selections_notes &&
+          <p className="js-muted">No selections recorded yet.</p>}
+      </section>
+
+      {lead.notes && <section><h2>Lead notes</h2><div className="js-notes"><p>{lead.notes}</p></div></section>}
+
+      <section className="js-write">
+        <h2>On-site notes</h2>
+        <div className="js-lines"><i /><i /><i /><i /><i /></div>
+      </section>
+
+      <div className="js-foot">
+        <b>DD Davis Limited</b> · Built on trust. Driven by quality.<br />
+        Unit 9, Grove Mills, Wade House Road, Shelf, Halifax HX3 7PE · 01274 481302 · dddavis.co.uk<br />
+        Gas Safe &amp; MCS certified
+      </div>
+    </div>
   )
 }
 
