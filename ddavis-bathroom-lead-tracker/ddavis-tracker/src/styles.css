@@ -637,3 +637,56 @@ kbd {
 .ht-row span { flex-shrink: 0; font-size: 10px; margin-top: 1px; }
 .ht-row.good { color: var(--stage-won); }
 .ht-row.bad  { color: var(--stage-lost); }
+
+/* ============================================================
+   CAD BOARD v3 — TradeBase-style columns & cards
+   ============================================================ */
+.cadboard {
+  display: flex; gap: 14px; align-items: flex-start;
+  overflow-x: auto; padding-bottom: 16px;
+  -webkit-overflow-scrolling: touch;
+}
+.col2 {
+  flex: 0 0 292px; max-width: 292px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 16px; padding: 14px 12px 12px;
+  transition: border-color 150ms ease, background 150ms ease;
+}
+.col2.drop-over { border-color: var(--col-color); background: var(--surface-2); }
+.col2 > header { display: flex; align-items: center; gap: 8px; padding: 0 4px 12px; }
+.c2-title { font-size: 16px; font-weight: 800; color: var(--text); }
+.c2-count {
+  font-size: 11.5px; font-weight: 700; padding: 1px 8px; border-radius: 999px;
+  background: color-mix(in srgb, var(--col-color) 16%, transparent); color: var(--col-color);
+}
+.c2-value { margin-left: auto; font-size: 12.5px; font-weight: 700; color: var(--stage-won); }
+.c2-cards { display: flex; flex-direction: column; gap: 10px; }
+
+.kcard2 {
+  background: var(--bg); border: 1px solid var(--border); border-radius: 13px;
+  padding: 13px 14px; cursor: grab;
+  transition: border-color 150ms ease, transform 120ms ease, box-shadow 150ms ease;
+}
+.kcard2:hover { border-color: var(--border-strong); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,0,0,0.35); }
+.kcard2:active { cursor: grabbing; }
+.kcard2.dragging { opacity: 0.45; transform: rotate(1.5deg); }
+.k2-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+.k2-top b { font-size: 14px; color: var(--text); line-height: 1.3; }
+.k2-hot {
+  flex-shrink: 0; font-size: 9.5px; font-weight: 800; letter-spacing: 0.05em;
+  color: #141418; background: var(--stage-lost); border-radius: 6px; padding: 2px 7px;
+}
+.k2-time { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+.k2-rows { display: flex; flex-direction: column; gap: 4px; margin-top: 10px; }
+.k2-rows span { font-size: 12px; color: var(--text-secondary); }
+.k2-date { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+.k2-date.late { color: var(--stage-lost); font-weight: 600; }
+.k2-value { font-size: 15px; font-weight: 800; color: var(--stage-won); margin-top: 10px; }
+.k2-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.k2-chip {
+  font-size: 10.5px; font-weight: 600; color: var(--text-secondary);
+  background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px; padding: 2px 7px;
+}
+.k2-chip.designer { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 35%, transparent); }
+.k2-chip.warn { color: var(--stage-quoted); border-color: color-mix(in srgb, var(--stage-quoted) 35%, transparent); }
+@media (max-width: 720px) { .col2 { flex-basis: 260px; } }
