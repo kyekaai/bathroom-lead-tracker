@@ -210,7 +210,7 @@ function Layout({ children }) {
           <button onClick={() => supabase.auth.signOut()} title="Log out" aria-label="Log out"><Icon name="logout" /></button>
         </div>
       </aside>
-      <main className="main">{children}</main>
+      <main className="main"><div className="page-anim" key={loc.pathname}>{children}</div></main>
       <Spotlight />
 
       {/* Mobile bottom tab bar — 4 main destinations + More (full menu) */}
