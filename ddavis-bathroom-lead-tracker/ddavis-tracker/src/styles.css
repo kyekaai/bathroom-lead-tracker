@@ -690,3 +690,46 @@ kbd {
 .k2-chip.designer { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 35%, transparent); }
 .k2-chip.warn { color: var(--stage-quoted); border-color: color-mix(in srgb, var(--stage-quoted) 35%, transparent); }
 @media (max-width: 720px) { .col2 { flex-basis: 260px; } }
+
+/* ============================================================
+   FOLLOW-UP TEMPLATES · TODAY'S ACTIONS · WELCOME BANNER
+   ============================================================ */
+.fu-templates { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 14px; }
+.fu-chip {
+  font-size: 12px; font-weight: 600; color: var(--text-secondary);
+  background: var(--surface-2); border: 1px solid var(--border); border-radius: 999px;
+  padding: 5px 12px; cursor: pointer; transition: border-color 130ms ease, color 130ms ease;
+  font-family: inherit;
+}
+.fu-chip:hover { border-color: var(--border-strong); color: var(--text); }
+.fu-chip.on { border-color: var(--accent); color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+
+.ta-summary { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
+.ta-pill {
+  display: inline-flex; align-items: center; gap: 8px; text-decoration: none;
+  background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--pc);
+  border-radius: 10px; padding: 8px 14px; transition: border-color 130ms ease, transform 120ms ease;
+}
+.ta-pill:hover { border-color: var(--pc); transform: translateY(-1px); }
+.ta-pill b { font-size: 16px; color: var(--pc); }
+.ta-pill span { font-size: 12px; color: var(--text-secondary); }
+.ta-card { border-top: 3px solid var(--bc); }
+.ta-count {
+  font-size: 12px; font-weight: 700; padding: 1px 9px; border-radius: 999px;
+  background: color-mix(in srgb, var(--bc) 16%, transparent); color: var(--bc);
+}
+
+.welcome-banner {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 12%, var(--surface)), var(--surface));
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+  border-radius: 12px; padding: 12px 16px; margin-bottom: 16px;
+  font-size: 13.5px; color: var(--text);
+  animation: rise 200ms ease;
+}
+.welcome-banner a { color: var(--accent); font-weight: 700; }
+.welcome-banner button {
+  background: transparent; border: 0; color: var(--text-muted); font-size: 14px;
+  cursor: pointer; padding: 4px 6px; flex-shrink: 0;
+}
+.welcome-banner button:hover { color: var(--text); }
