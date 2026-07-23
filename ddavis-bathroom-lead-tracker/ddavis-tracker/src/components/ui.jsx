@@ -4,7 +4,7 @@ import { supabase, logActivity } from '../lib/supabase'
 import { useApp } from '../App'
 import {
   STAGE_COLOR, PRIORITY_COLOR, derive, fmtDate, money, daysSince,
-  STAGES, PRE_SURVEY_STAGES, STAGE_TO_CAD, LOST_REASONS, today, healthScore, healthColor, healthBreakdown,
+  STAGES, PRE_SURVEY_STAGES, STAGE_TO_CAD, LOST_REASONS, today, healthScore, healthColor, healthBreakdown, stageAge,
 } from '../lib/logic'
 import { fireConfetti } from '../lib/confetti'
 
@@ -26,7 +26,7 @@ export function StageSelect({ lead }) {
   async function change(e) {
     const stage = e.target.value
     if (stage === lead.stage) return
-    const patch = { stage }
+    const patch = { stage, stage_changed_at: new Date().toISOString() }
     if (stage === 'Lost') {
       const reason = prompt('Reason lost? (' + LOST_REASONS.join(' / ') + ')', 'No response')
       if (reason === null) { e.target.value = lead.stage; return }
