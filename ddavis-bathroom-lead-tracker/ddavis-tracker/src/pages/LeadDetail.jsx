@@ -144,12 +144,25 @@ export default function LeadDetail() {
           </div>
 
           <div className="lead-card" style={{ padding: 0, cursor: 'default', boxShadow: 'none', border: 0 }}>
-            <div className="action" style={{ marginTop: 8 }}>
-              <b>Next action</b>{d.nextAction}
-              {d.dSurvey !== null && !lead.selection_form_returned && lead.stage !== 'Won' && lead.stage !== 'Lost' && (
-                <span className={`badge ${selectionBand(d.dSurvey) === 'normal' ? 'grey' : selectionBand(d.dSurvey)}`} style={{ marginLeft: 8 }}>
-                  {d.dSurvey} days since survey
-                </span>
+            <div className="action" style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+              <span>
+                <b>Next action</b>{d.nextAction}
+                {d.dSurvey !== null && !lead.selection_form_returned && lead.stage !== 'Won' && lead.stage !== 'Lost' && (
+                  <span className={`badge ${selectionBand(d.dSurvey) === 'normal' ? 'grey' : selectionBand(d.dSurvey)}`} style={{ marginLeft: 8 }}>
+                    {d.dSurvey} days since survey
+                  </span>
+                )}
+              </span>
+              {lead.survey_completed && !lead.selection_form_returned && lead.stage !== 'Won' && lead.stage !== 'Lost' && (
+                <button className="btn sm gold" style={{ marginLeft: 'auto', flexShrink: 0 }}
+                  onClick={() => save({
+                    selection_form_returned: true,
+                    selection_form_returned_date: today(),
+                    stage: 'Selection Form Received',
+                    next_chase_date: null,
+                  }, 'selection_form', 'Selection form received — marked from lead header')}>
+                  ✓ Selection form received
+                </button>
               )}
             </div>
           </div>
@@ -313,6 +326,20 @@ function FollowUps({ lead, followUps, save, profile, reload, notify }) {
   const [f, setF] = useState({ date: today(), method: 'phone', notes: '', outcome: '', next_follow_up_date: '' })
   const attempts = lead.chase_attempts || 0
 
+  // Quick-tap outcomes — tap to fill the form in one go
+  const TEMPLATES = [
+    { label: 'Left voicemail',                method: 'phone',    days: 2 },
+    { label: 'No answer',                     method: 'phone',    days: 1 },
+    { label: 'Spoke — will call us back',     method: 'phone',    days: 4 },
+    { label: 'Asked to call back next week',  method: 'phone',    days: 7 },
+    { label: 'Email sent',                    method: 'email',    days: 3 },
+    { label: 'WhatsApp sent',                 method: 'whatsapp', days: 3 },
+  ]
+  const applyTemplate = t => {
+    const next = new Date(); next.setDate(next.getDate() + t.days)
+    setF(p => ({ ...p, outcome: t.label, method: t.method, next_follow_up_date: p.next_follow_up_date || next.toISOString().slice(0, 10) }))
+  }
+
   async function add(e) {
     e.preventDefault()
     const { error } = await supabase.from('follow_ups').insert({
@@ -343,6 +370,13 @@ function FollowUps({ lead, followUps, save, profile, reload, notify }) {
           <span className={`badge ${attempts >= MAX_FOLLOW_UPS ? 'critical' : attempts >= 3 ? 'amber' : 'grey'}`}>Attempt {Math.min(attempts + 1, MAX_FOLLOW_UPS)} of {MAX_FOLLOW_UPS}</span>
         </div>
         <form className="card-body" onSubmit={add}>
+          <div className="fu-templates">
+            {TEMPLATES.map(t => (
+              <button key={t.label} type="button"
+                className={`fu-chip ${f.outcome === t.label ? 'on' : ''}`}
+                onClick={() => applyTemplate(t)}>{t.label}</button>
+            ))}
+          </div>
           <div className="form-grid">
             <div className="field"><label>Date</label><input type="date" value={f.date} onChange={e => setF({ ...f, date: e.target.value })} required /></div>
             <div className="field"><label>Contact method</label>
