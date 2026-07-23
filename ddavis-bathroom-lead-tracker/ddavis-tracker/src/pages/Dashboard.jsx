@@ -4,7 +4,7 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'rec
 import { useApp } from '../App'
 import { supabase } from '../lib/supabase'
 import { Stat, StageBadge } from '../components/ui'
-import { buildTodaysActions, derive, money, fmtDate } from '../lib/logic'
+import { buildTodaysActions, derive, money, fmtDate, findBottlenecks } from '../lib/logic'
 
 // Pipeline groups — colours mean the same thing everywhere
 const GROUPS = [
@@ -55,6 +55,9 @@ function useCountUp(target) {
 export default function Dashboard() {
   const { leads, loading, profile } = useApp()
   const [feed, setFeed] = useState([])
+  const bottlenecks = findBottlenecks(leads)
+  const worst = bottlenecks[0]
+  const maxCount = Math.max(1, ...bottlenecks.map(b => b.count))
   const [welcome, setWelcome] = useState(() => {
     try { return !localStorage.getItem('dd-welcome-dismissed') } catch { return false }
   })
@@ -215,6 +218,38 @@ export default function Dashboard() {
                 <Area type="monotone" dataKey="leads" stroke="#f3ab2d" strokeWidth={2} fill="url(#heroFill)" />
               </AreaChart>
             </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Where the pipeline is backing up */}
+        <div className="card">
+          <div className="card-head"><h2>Pipeline bottlenecks</h2><Link className="btn sm ghost" to="/leads?view=table">All leads</Link></div>
+          <div className="card-body" style={{ paddingTop: 8 }}>
+            {bottlenecks.length === 0
+              ? <p className="muted">Nothing active in the pipeline.</p>
+              : <>
+                  <p className="muted small" style={{ marginTop: 0 }}>
+                    {worst && worst.stuck > 0
+                      ? <>Biggest hold-up: <b style={{ color: 'var(--stage-lost)' }}>{worst.stage}</b> — {worst.stuck} lead{worst.stuck === 1 ? '' : 's'} past the {worst.target}-day target.</>
+                      : <>Nothing over target — the pipeline is flowing well.</>}
+                  </p>
+                  {bottlenecks.slice(0, 6).map(b => {
+                    const pct = maxCount ? Math.round((b.count / maxCount) * 100) : 0
+                    return (
+                      <Link key={b.stage} to={`/leads?stage=${encodeURIComponent(b.stage)}`} className="bneck">
+                        <div className="bn-top">
+                          <span className="bn-stage">{b.stage}</span>
+                          <span className="bn-nums">
+                            {b.stuck > 0 && <em title={`Over the ${b.target}-day target`}>{b.stuck} stuck</em>}
+                            <b>{b.count}</b>
+                          </span>
+                        </div>
+                        <div className="bn-track"><div className="bn-fill" style={{ width: `${pct}%`, background: b.stuck > 0 ? 'var(--stage-lost)' : 'var(--stage-new)' }} /></div>
+                        <div className="bn-meta">avg {b.avgDays}d in stage{b.target ? ` · target ${b.target}d` : ''}</div>
+                      </Link>
+                    )
+                  })}
+                </>}
           </div>
         </div>
 
