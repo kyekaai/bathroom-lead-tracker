@@ -614,3 +614,26 @@ kbd {
   .pipebar.animate .seg-bar, .lead-cards.animate .lead-card { animation: none; }
   .health .val { transition: none; }
 }
+
+/* ============================================================
+   HEALTH RING TOOLTIP
+   ============================================================ */
+.health { position: relative; }
+.health-tip {
+  position: absolute; left: 52px; top: 50%; transform: translateY(-50%);
+  z-index: 50; width: 230px;
+  background: var(--surface); border: 1px solid var(--border-strong);
+  border-radius: 10px; box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  padding: 10px 12px; pointer-events: none;
+  animation: rise 120ms ease;
+}
+/* on cards near the right edge, flip the tooltip left */
+.lead-card:nth-child(5n) .health-tip,
+.lead-card:nth-child(5n-1) .health-tip { left: auto; right: 52px; }
+.ht-head { font-size: 11px; font-weight: 700; color: var(--text); margin-bottom: 7px;
+  padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+.ht-row { display: flex; gap: 7px; align-items: flex-start; font-size: 11.5px;
+  padding: 3px 0; line-height: 1.35; }
+.ht-row span { flex-shrink: 0; font-size: 10px; margin-top: 1px; }
+.ht-row.good { color: var(--stage-won); }
+.ht-row.bad  { color: var(--stage-lost); }
