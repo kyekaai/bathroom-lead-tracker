@@ -41,7 +41,7 @@ export default function CadDesigns() {
     const lead = cadLeads.find(l => l.id === dragId)
     setDragId(null)
     if (!lead || lead.cad_status === status) return
-    const patch = { cad_status: status, stage: CAD_TO_STAGE[status] }
+    const patch = { cad_status: status, stage: CAD_TO_STAGE[status], stage_changed_at: new Date().toISOString() }
     if (status === 'approved') patch.cad_completed_date = new Date().toISOString().slice(0, 10)
     const { error } = await supabase.from('leads').update(patch).eq('id', lead.id)
     if (error) return notify('Could not move card — ' + error.message)
