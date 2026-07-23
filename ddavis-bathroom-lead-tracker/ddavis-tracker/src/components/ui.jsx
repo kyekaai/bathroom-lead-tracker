@@ -140,7 +140,7 @@ function LinkBtn({ to, children }) {
 }
 
 // Quick note — jot a note on a lead without opening it. Logs to the timeline.
-export function QuickNote({ lead }) {
+export function QuickNote({ lead, label }) {
   const { profile, notify, refresh } = useApp()
   const [open, setOpen] = useState(false)
   const [text, setText] = useState('')
@@ -161,8 +161,8 @@ export function QuickNote({ lead }) {
 
   return (
     <>
-      <button type="button" className="note-btn" title="Add a quick note"
-        onClick={e => { e.stopPropagation(); setOpen(true) }}>✎</button>
+      <button type="button" className={label ? 'btn sm ghost' : 'note-btn'} title="Add a quick note"
+        onClick={e => { e.stopPropagation(); setOpen(true) }}>{label || '✎'}</button>
       {open && (
         <div className="qn-overlay" onClick={e => { e.stopPropagation(); setOpen(false) }}>
           <div className="qn-box" onClick={e => e.stopPropagation()}>
