@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useApp } from '../App'
 import { supabase, logActivity } from '../lib/supabase'
-import { LeadCard, StageBadge, StageSelect, PriorityBadge, IdleBadge, Empty } from '../components/ui'
+import { LeadCard, StageBadge, StageSelect, PriorityBadge, IdleBadge, Empty, SkeletonCards } from '../components/ui'
 import { STAGES, PRE_SURVEY_STAGES, BATHROOM_TYPES, LEAD_SOURCES, STAGE_GROUPS, derive, fmtDate, money, today } from '../lib/logic'
 import { fireConfetti } from '../lib/confetti'
 
@@ -47,7 +47,7 @@ export default function Leads() {
     return true
   }), [leads, params])
 
-  if (loading) return <p className="muted">Loading…</p>
+  if (loading) return <SkeletonCards n={6} />
 
   const toggleSel = id => setSel(p => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n })
   const allShown = filtered.map(({ lead }) => lead.id)
