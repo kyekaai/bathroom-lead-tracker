@@ -373,3 +373,48 @@ export function timeAgo(ts) {
   const d = Math.floor(h / 24); if (d < 30) return `${d} day${d === 1 ? '' : 's'} ago`
   const mo = Math.floor(d / 30); return `${mo} month${mo === 1 ? '' : 's'} ago`
 }
+
+// ---------- time in stage ----------
+// How long a lead has sat at its current stage, plus whether that's too long.
+// Targets are the turnaround we aim for at each step (in days).
+export const STAGE_TARGET_DAYS = {
+  'New Enquiry': 1, 'Contacted': 3, 'Survey Booked': 14,
+  'Survey Complete': 3, 'Awaiting Selection Form': 10, 'Selection Form Received': 3,
+  'CAD Required': 3, 'CAD Booked': 7, 'CAD In Progress': 5,
+  'CAD Sent': 7, 'CAD Revisions Required': 5, 'CAD Approved': 3,
+  'Quote Sent': 10, 'Quote Follow Up': 7,
+}
+
+export function stageAge(lead) {
+  const since = lead.stage_changed_at || lead.updated_at || lead.created_at
+  const days = daysSince(since)
+  const target = STAGE_TARGET_DAYS[lead.stage] ?? null
+  const over = target !== null && days !== null && days > target
+  return { days, target, over }
+}
+
+// Add a stage timestamp whenever a patch actually changes the stage
+export function stampStage(patch, lead) {
+  if (patch.stage && patch.stage !== lead?.stage) {
+    return { ...patch, stage_changed_at: new Date().toISOString() }
+  }
+  return patch
+}
+
+// ---------- pipeline bottleneck ----------
+// Which stage has the most active leads stuck past its target?
+export function findBottlenecks(leads) {
+  const active = leads.filter(l => l.stage !== 'Won' && l.stage !== 'Lost')
+  const map = {}
+  for (const l of active) {
+    const { days, target, over } = stageAge(l)
+    if (!map[l.stage]) map[l.stage] = { stage: l.stage, count: 0, stuck: 0, totalDays: 0, target }
+    const m = map[l.stage]
+    m.count++
+    m.totalDays += days ?? 0
+    if (over) m.stuck++
+  }
+  return Object.values(map)
+    .map(m => ({ ...m, avgDays: m.count ? Math.round(m.totalDays / m.count) : 0 }))
+    .sort((a, b) => b.stuck - a.stuck || b.count - a.count)
+}
