@@ -1,14 +1,14 @@
 import { Link } from 'react-router-dom'
 import { useApp } from '../App'
 import { buildTodaysActions, timeAgo } from '../lib/logic'
-import { StageBadge, PriorityBadge, Empty } from '../components/ui'
+import { StageBadge, PriorityBadge, Empty, SkeletonRows } from '../components/ui'
 import { waNumber } from '../lib/docs'
 
 const P_WEIGHT = { Critical: 0, High: 1, Medium: 2, Low: 3 }
 
 export default function TodaysActions() {
   const { leads, loading } = useApp()
-  if (loading) return <p className="muted">Loading…</p>
+  if (loading) return <SkeletonRows n={6} />
 
   const buckets = buildTodaysActions(leads)
   const total = buckets.reduce((n, b) => n + b.items.length, 0)
