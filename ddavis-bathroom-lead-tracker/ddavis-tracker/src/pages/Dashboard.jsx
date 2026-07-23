@@ -26,6 +26,21 @@ function timeAgo(ts) {
   return new Date(ts).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })
 }
 
+
+// Give each staff member a consistent colour from their name
+const AV_COLORS = [
+  ['#f3ab2d', '#d9951c'], ['#4f9dff', '#3d85e0'], ['#a78bfa', '#8b6ce0'],
+  ['#34d399', '#22b07f'], ['#fb7185', '#e05567'], ['#2dd4bf', '#22b8a6'],
+]
+function avatarFor(name) {
+  const n = (name || '?').trim()
+  let h = 0
+  for (let i = 0; i < n.length; i++) h = (h * 31 + n.charCodeAt(i)) >>> 0
+  const [a, b] = AV_COLORS[h % AV_COLORS.length]
+  const initials = n.split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase() || '?'
+  return { initials, background: `linear-gradient(135deg, ${a}, ${b})` }
+}
+
 const FEED_DOT = {
   stage: 'blue', cad: 'purple', quote: 'gold', email: 'gold', selection_form: 'gold',
   follow_up: 'amber', note: 'grey', created: 'teal', import: 'teal', survey: 'blue', file: 'grey',
@@ -274,10 +289,10 @@ export default function Dashboard() {
           <div className="card-body feed" style={{ paddingTop: 8 }}>
             {feed.map(a => (
               <Link key={a.id} to={`/leads/${a.lead_id}`} className="feed-item">
-                <span className={`dot ${FEED_DOT[a.type] || 'grey'}`} />
+                {(() => { const av = avatarFor(a.actor); return <span className="feed-av" style={{ background: av.background }}>{av.initials}</span> })()}
                 <div className="feed-text">
-                  <span><b>{a.actor || 'System'}</b> — {a.message}</span>
-                  <span className="muted small">{a.leads?.customer_name || 'Lead'} · {timeAgo(a.created_at)}</span>
+                  <span>{a.message}</span>
+                  <span className="muted small">{a.leads?.customer_name || 'Lead'} · {timeAgo(a.created_at)}{a.actor ? ` · ${a.actor}` : ''}</span>
                 </div>
               </Link>
             ))}
