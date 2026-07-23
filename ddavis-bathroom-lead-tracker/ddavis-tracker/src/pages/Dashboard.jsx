@@ -162,15 +162,30 @@ export default function Dashboard() {
         <Stat n={`${convRate}%`} label="Conversion rate" tone="green" />
       </div>
 
-      {/* PIPELINE — segmented funnel bar */}
-      <div className="pipebar animate">
-        {groups.map(g => (
-          <Link key={g.key} className="seg-wrap" to={g.key === 'won' ? '/leads?stage=Won' : `/leads?group=${g.key}`}>
-            <div className="seg-bar" style={{ background: g.color, opacity: 0.25 + 0.75 * (g.n / maxN) }} />
-            <div className="seg-name" style={{ color: g.color }}>{g.label}</div>
-            <div className="seg-meta">{g.n} · {money(g.value)}</div>
-          </Link>
-        ))}
+      {/* PIPELINE — funnel showing drop-off between stages */}
+      <div className="card" style={{ marginBottom: 16 }}>
+        <div className="card-head"><h2>Pipeline funnel</h2><span className="muted small">where leads drop off</span></div>
+        <div className="card-body">
+          <div className="funnel">
+            {groups.map((g, i) => {
+              const prev = i > 0 ? groups[i - 1].n : null
+              const carried = prev ? Math.round((g.n / prev) * 100) : null
+              const width = Math.max(18, Math.round((g.n / maxN) * 100))
+              return (
+                <Link key={g.key} className="fn-row" to={g.key === 'won' ? '/leads?stage=Won' : `/leads?group=${g.key}`}>
+                  <div className="fn-bar" style={{ width: `${width}%`, background: `linear-gradient(90deg, ${g.color}, color-mix(in srgb, ${g.color} 72%, #000))` }}>
+                    {g.label}
+                  </div>
+                  <div className="fn-side">
+                    <b>{g.n}</b> {g.n === 1 ? 'lead' : 'leads'}
+                    {carried !== null && <> · {carried}% carried</>}
+                    {g.value > 0 && <> · {money(g.value)}</>}
+                  </div>
+                </Link>
+              )
+            })}
+          </div>
+        </div>
       </div>
 
       {/* TODAY'S ACTIONS — the most important part */}
