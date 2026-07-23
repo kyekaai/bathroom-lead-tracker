@@ -531,3 +531,86 @@ html, body {
 .feed .feed-text > span:first-child { font-size: 13px; color: var(--text); }
 .feed .feed-text b { font-weight: 700; }
 .feed .feed-item:hover .feed-text > span:first-child { color: var(--accent); }
+
+/* ============================================================
+   POLISH PACK — animations, health rings, spotlight search
+   ============================================================ */
+
+/* Animated pipeline — bars sweep in on load */
+@keyframes growbar { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+.pipebar.animate .seg-bar { transform-origin: left; animation: growbar 700ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
+.pipebar.animate .seg-wrap:nth-child(1) .seg-bar { animation-delay: 0ms; }
+.pipebar.animate .seg-wrap:nth-child(2) .seg-bar { animation-delay: 120ms; }
+.pipebar.animate .seg-wrap:nth-child(3) .seg-bar { animation-delay: 240ms; }
+.pipebar.animate .seg-wrap:nth-child(4) .seg-bar { animation-delay: 360ms; }
+.pipebar.animate .seg-wrap:nth-child(5) .seg-bar { animation-delay: 480ms; }
+.pipebar.animate .seg-wrap:nth-child(6) .seg-bar { animation-delay: 600ms; }
+
+/* Lead cards slide up one after another */
+@keyframes cardin { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+.lead-cards.animate .lead-card { animation: cardin 420ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
+.lead-cards.animate .lead-card:nth-child(1)  { animation-delay: 40ms; }
+.lead-cards.animate .lead-card:nth-child(2)  { animation-delay: 100ms; }
+.lead-cards.animate .lead-card:nth-child(3)  { animation-delay: 160ms; }
+.lead-cards.animate .lead-card:nth-child(4)  { animation-delay: 220ms; }
+.lead-cards.animate .lead-card:nth-child(5)  { animation-delay: 280ms; }
+.lead-cards.animate .lead-card:nth-child(6)  { animation-delay: 340ms; }
+.lead-cards.animate .lead-card:nth-child(7)  { animation-delay: 400ms; }
+.lead-cards.animate .lead-card:nth-child(8)  { animation-delay: 460ms; }
+.lead-cards.animate .lead-card:nth-child(9)  { animation-delay: 520ms; }
+.lead-cards.animate .lead-card:nth-child(10) { animation-delay: 580ms; }
+
+/* Health ring */
+.health { position: relative; width: 44px; height: 44px; flex-shrink: 0; }
+.health svg { transform: rotate(-90deg); display: block; }
+.health circle { fill: none; stroke-width: 4; }
+.health .track { stroke: var(--neutral-soft); }
+.health .val { stroke-linecap: round; transition: stroke-dashoffset 900ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+.health b { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 11px; color: var(--text); font-variant-numeric: tabular-nums; }
+
+/* Sidebar search button */
+.side-search {
+  display: flex; justify-content: space-between; align-items: center; gap: 8px;
+  margin: 0 16px 8px; padding: 8px 12px; width: calc(100% - 32px);
+  background: var(--surface); border: 1px solid var(--border); border-radius: 9px;
+  color: var(--text-muted); font-size: 12.5px; cursor: pointer;
+  transition: border-color 150ms ease, color 150ms ease;
+}
+.side-search:hover { border-color: var(--border-strong); color: var(--text-secondary); }
+kbd {
+  background: var(--surface-2); border: 1px solid var(--border-strong); border-bottom-width: 2px;
+  border-radius: 5px; padding: 1px 6px; font-size: 10.5px; color: var(--text-muted); font-family: inherit;
+}
+
+/* Spotlight */
+.spot-overlay {
+  position: fixed; inset: 0; z-index: 95; background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px);
+  display: flex; align-items: flex-start; justify-content: center; padding: 12vh 16px 16px;
+}
+.spot {
+  width: min(560px, 94vw); background: var(--surface); border: 1px solid var(--border-strong);
+  border-radius: 14px; box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6); overflow: hidden;
+  animation: rise 160ms ease;
+}
+.spot input {
+  width: 100%; background: transparent; border: 0; outline: none; color: var(--text);
+  font-size: 16px; padding: 16px 18px; border-bottom: 1px solid var(--border);
+}
+.spot .hint { padding: 8px 18px; font-size: 11px; color: var(--text-muted); border-bottom: 1px solid var(--border); }
+.spot .res { max-height: 320px; overflow-y: auto; }
+.spot .res button {
+  display: flex; justify-content: space-between; align-items: center; gap: 12px; width: 100%;
+  text-align: left; padding: 12px 18px; background: transparent; border: 0;
+  border-bottom: 1px solid var(--border); cursor: pointer; font-family: inherit;
+}
+.spot .res button.on { background: var(--surface-2); }
+.spot .res button b { color: var(--text); font-size: 13.5px; display: block; }
+.spot .res button small { color: var(--text-muted); font-size: 11.5px; }
+.spot .res .none { padding: 18px; color: var(--text-muted); font-size: 13px; text-align: center; }
+
+/* Accessibility: honour reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  .pipebar.animate .seg-bar, .lead-cards.animate .lead-card { animation: none; }
+  .health .val { transition: none; }
+}
