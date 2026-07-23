@@ -4,6 +4,7 @@ import { supabase, logActivity } from '../lib/supabase'
 import { useApp } from '../App'
 import { StageBadge, PriorityBadge } from '../components/ui'
 import { DOCS, waLink, mailtoLink, outlookLink, buildMessage, waNumber, EMAIL_TEMPLATES, templateOutlook, templateMailto } from '../lib/docs'
+import { fireConfetti } from '../lib/confetti'
 import {
   STAGES, PRE_SURVEY_STAGES, STAGE_TO_CAD, LOST_REASONS, CONTACT_METHODS, CAD_STATUSES, FILE_CATEGORIES,
   derive, fmtDate, money, selectionBand, MAX_FOLLOW_UPS, today,
@@ -61,7 +62,7 @@ export default function LeadDetail() {
       return save({ stage, lost_reason: reason }, 'stage', `Marked Lost — ${reason}`)
     }
     const patch = { stage }
-    if (stage === 'Won') patch.quote_outcome = 'accepted'
+    if (stage === 'Won') { patch.quote_outcome = 'accepted'; fireConfetti() }
     if (STAGE_TO_CAD[stage]) {
       patch.cad_required = 'yes'
       patch.cad_status = STAGE_TO_CAD[stage]
