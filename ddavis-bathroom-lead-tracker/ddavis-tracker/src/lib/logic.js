@@ -315,3 +315,33 @@ export function guessMapping(headers) {
   map.notes = find('note', 'comment', 'description')
   return map
 }
+
+// ---------- lead health score (0–100) ----------
+// One number for "how is this lead doing" — drives the ring on lead cards.
+export function healthScore(lead) {
+  if (lead.stage === 'Won') return 100
+  if (lead.stage === 'Lost') return 0
+  let s = 100
+  const dSurvey = daysSince(lead.survey_completed_date)
+  if (lead.survey_completed && !lead.selection_form_returned) {
+    const band = selectionBand(dSurvey)
+    if (band === 'amber') s -= 15
+    else if (band === 'red') s -= 30
+    else if (band === 'critical') s -= 45
+  }
+  s -= Math.min((lead.chase_attempts || 0) * 6, 30)
+  const dQuote = daysSince(lead.quote_sent_date)
+  if (lead.quote_sent && !lead.quote_outcome && dQuote !== null) {
+    if (dQuote > 10) s -= 25
+    else if (dQuote > 3) s -= 15
+  }
+  if (isPast(lead.next_chase_date) || isPast(lead.next_quote_chase_date)) s -= 15
+  const idle = daysSince(lead.updated_at)
+  if (idle !== null) { if (idle >= 14) s -= 20; else if (idle >= 7) s -= 10 }
+  if (lead.stage === 'New Enquiry' && (daysSince(lead.created_at) ?? 0) >= 3) s -= 20
+  return Math.max(5, Math.min(95, s))
+}
+
+export function healthColor(score) {
+  return score >= 70 ? 'var(--stage-won)' : score >= 40 ? 'var(--stage-quoted)' : 'var(--stage-lost)'
+}
