@@ -84,7 +84,7 @@ export default function Dashboard() {
 
   const awaitingForms = active.filter(l => l.survey_completed && !l.selection_form_returned).length
   const cadInProgress = leads.filter(l => ['booked', 'in progress', 'revisions requested'].includes(l.cad_status)).length
-  const quotesChase = leads.filter(l => derive(l).flags.followUpQuote).length
+  const cadAwaiting = active.filter(l => l.cad_status === 'sent to customer').length
   const decided = won.length + lost.length
   const convRate = decided ? Math.round(won.length / decided * 100) : 0
   const wonRev = won.reduce((s, l) => s + Number(l.quote_value ?? l.estimated_value ?? 0), 0)
@@ -158,7 +158,7 @@ export default function Dashboard() {
         </div>
         <Stat n={awaitingForms} label="Awaiting selection forms" tone="blue" />
         <Stat n={cadInProgress} label="CAD in progress" tone="purple" />
-        <Stat n={quotesChase} label="Quotes to follow up" tone="gold" />
+        <Stat n={cadAwaiting} label="Designs awaiting approval" tone="gold" />
         <Stat n={`${convRate}%`} label="Conversion rate" tone="green" />
       </div>
 
