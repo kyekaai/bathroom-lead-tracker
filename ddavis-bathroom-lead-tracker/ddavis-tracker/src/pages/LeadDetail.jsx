@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { supabase, logActivity } from '../lib/supabase'
 import { useApp } from '../App'
-import { StageBadge, PriorityBadge } from '../components/ui'
+import { StageBadge, PriorityBadge, QuickNote } from '../components/ui'
 import { DOCS, waLink, mailtoLink, outlookLink, buildMessage, waNumber, EMAIL_TEMPLATES, templateOutlook, templateMailto } from '../lib/docs'
 import { fireConfetti } from '../lib/confetti'
 import {
@@ -181,18 +181,32 @@ export default function LeadDetail() {
                   </span>
                 )}
               </span>
-              {lead.survey_completed && !lead.selection_form_returned && lead.stage !== 'Won' && lead.stage !== 'Lost' && (
-                <button className="btn sm gold" style={{ marginLeft: 'auto', flexShrink: 0 }}
-                  onClick={() => save({
-                    selection_form_returned: true,
-                    selection_form_returned_date: today(),
-                    stage: 'Selection Form Received',
-                    next_chase_date: null,
-                  }, 'selection_form', 'Selection form received — marked from lead header')}>
-                  ✓ Selection form received
-                </button>
-              )}
             </div>
+          </div>
+
+          {/* Quick actions — the things we actually do most, without digging into tabs */}
+          <div className="quickbar">
+            {lead.survey_completed && !lead.selection_form_returned && lead.stage !== 'Won' && lead.stage !== 'Lost' && (
+              <button className="btn sm gold"
+                onClick={() => save({
+                  selection_form_returned: true,
+                  selection_form_returned_date: today(),
+                  stage: 'Selection Form Received',
+                  next_chase_date: null,
+                }, 'selection_form', 'Selection form received — marked from lead header')}>
+                ✓ Selection form received
+              </button>
+            )}
+            <button className="btn sm ghost" onClick={() => setTab('followups')}>📞 Log a chase</button>
+            {waNumber(lead.phone) &&
+              <a className="btn sm ghost" href={`https://wa.me/${waNumber(lead.phone)}`} target="_blank" rel="noreferrer">🟢 WhatsApp</a>}
+            {lead.phone && <a className="btn sm ghost" href={`tel:${lead.phone}`}>☎ Call</a>}
+            <button className="btn sm ghost" onClick={() => setTab('send')}>📄 Send docs</button>
+            <QuickNote lead={lead} label="✎ Add a note" />
+            {lead.stage !== 'Won' && lead.stage !== 'Lost' && (
+              <button className="btn sm ghost" style={{ marginLeft: 'auto' }}
+                onClick={() => changeStage('Won')}>🏆 Mark Won</button>
+            )}
           </div>
         </div>
       </div>
