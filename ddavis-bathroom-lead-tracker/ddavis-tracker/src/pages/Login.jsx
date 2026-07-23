@@ -4,14 +4,14 @@ import { supabase } from '../lib/supabase'
 export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [err, setErr] = useState(null)
+  const [err, setErr] = useState('')
   const [busy, setBusy] = useState(false)
 
   async function submit(e) {
     e.preventDefault()
-    setBusy(true); setErr(null)
+    setBusy(true); setErr('')
     const { error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) setErr('Login failed — check your email and password.')
+    if (error) setErr(error.message)
     setBusy(false)
   }
 
