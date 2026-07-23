@@ -1,5 +1,5 @@
 import { useEffect, useState, createContext, useContext, useCallback } from 'react'
-import { BrowserRouter, Routes, Route, NavLink, Navigate, useLocation } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, NavLink, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { supabase } from './lib/supabase'
 import { buildTodaysActions } from './lib/logic'
 
@@ -84,6 +84,62 @@ const NAV = [
   { to: '/users', icon: '👥', label: 'User Management' },
 ]
 
+
+// ── Spotlight search: Ctrl/Cmd+K anywhere to find and open any lead ──
+function Spotlight() {
+  const { leads } = useApp()
+  const nav = useNavigate()
+  const [open, setOpen] = useState(false)
+  const [q, setQ] = useState('')
+  const [idx, setIdx] = useState(0)
+
+  useEffect(() => {
+    const onKey = e => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault(); setOpen(o => !o); setQ(''); setIdx(0)
+      }
+      if (e.key === 'Escape') setOpen(false)
+    }
+    const onOpen = () => { setOpen(true); setQ(''); setIdx(0) }
+    window.addEventListener('keydown', onKey)
+    window.addEventListener('dd-spotlight', onOpen)
+    return () => { window.removeEventListener('keydown', onKey); window.removeEventListener('dd-spotlight', onOpen) }
+  }, [])
+
+  if (!open) return null
+
+  const needle = q.trim().toLowerCase()
+  const results = leads
+    .filter(l => !needle || [l.customer_name, l.postcode, l.phone, l.email, l.address].join(' ').toLowerCase().includes(needle))
+    .slice(0, 8)
+
+  const go = l => { setOpen(false); nav(`/leads/${l.id}`) }
+  const onInputKey = e => {
+    if (e.key === 'ArrowDown') { e.preventDefault(); setIdx(i => Math.min(i + 1, results.length - 1)) }
+    if (e.key === 'ArrowUp') { e.preventDefault(); setIdx(i => Math.max(i - 1, 0)) }
+    if (e.key === 'Enter' && results[idx]) go(results[idx])
+  }
+
+  return (
+    <div className="spot-overlay" onClick={() => setOpen(false)}>
+      <div className="spot" onClick={e => e.stopPropagation()}>
+        <input autoFocus placeholder="Search leads by name, postcode, phone…" value={q}
+          onChange={e => { setQ(e.target.value); setIdx(0) }} onKeyDown={onInputKey} />
+        <div className="hint">↑↓ to navigate · Enter to open · Esc to close</div>
+        <div className="res">
+          {results.map((l, i) => (
+            <button key={l.id} className={i === idx ? 'on' : ''} onMouseEnter={() => setIdx(i)} onClick={() => go(l)}>
+              <span><b>{l.customer_name}</b><small>{[l.postcode, l.phone].filter(Boolean).join(' · ')}</small></span>
+              <small>{l.stage}</small>
+            </button>
+          ))}
+          {results.length === 0 && <div className="none">No leads match "{q}"</div>}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function Layout({ children }) {
   const { profile, actionCount } = useApp()
   const [open, setOpen] = useState(false)
@@ -100,6 +156,9 @@ function Layout({ children }) {
           <img src="/logo.png" alt="DD Davis Limited — Built on trust. Driven by quality." className="brand-logo"
             style={{ display: 'block', width: '100%', maxWidth: 160, height: 'auto' }} />
         </div>
+        <button className="side-search" onClick={() => window.dispatchEvent(new Event('dd-spotlight'))}>
+          <span>🔍 Search leads</span><kbd>Ctrl K</kbd>
+        </button>
         <nav className="nav">
           {NAV.map((n, i) => n.group
             ? <div key={i} className="group">{n.group}</div>
@@ -120,6 +179,7 @@ function Layout({ children }) {
         </div>
       </aside>
       <main className="main">{children}</main>
+      <Spotlight />
 
       {/* Mobile bottom tab bar — 4 main destinations + More (full menu) */}
       <nav className="tabbar" aria-label="Main">
