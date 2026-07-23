@@ -4,6 +4,7 @@ import { useApp } from '../App'
 import { supabase, logActivity } from '../lib/supabase'
 import { LeadCard, StageBadge, StageSelect, PriorityBadge, IdleBadge, Empty } from '../components/ui'
 import { STAGES, PRE_SURVEY_STAGES, BATHROOM_TYPES, LEAD_SOURCES, STAGE_GROUPS, derive, fmtDate, money, today } from '../lib/logic'
+import { fireConfetti } from '../lib/confetti'
 
 export default function Leads() {
   const { leads, loading, profile, notify, refresh } = useApp()
@@ -68,6 +69,7 @@ export default function Leads() {
     if (error) return notify('Bulk update failed — ' + error.message)
     await Promise.all(ids.map(id => logActivity(id, 'stage', `Stage changed to ${bulkStage} (bulk update)`, profile?.name)))
     await refresh()
+    if (bulkStage === 'Won') fireConfetti()
     notify(`${ids.length} lead${ids.length === 1 ? '' : 's'} moved to ${bulkStage} ✓`)
     clearSel(); setBulkStage('')
   }
@@ -145,7 +147,7 @@ export default function Leads() {
       {filtered.length === 0 && <div className="card"><Empty title="No leads yet" cta="＋ Add Lead" ctaTo="/leads/new">Try clearing a filter, import from your CRM, or add a lead.</Empty></div>}
 
       {view === 'cards' && (
-        <div className="lead-cards">{filtered.map(({ lead }) => <LeadCard key={lead.id} lead={lead} />)}</div>
+        <div className="lead-cards animate">{filtered.map(({ lead }) => <LeadCard key={lead.id} lead={lead} />)}</div>
       )}
 
       {view === 'table' && sel.size > 0 && (
