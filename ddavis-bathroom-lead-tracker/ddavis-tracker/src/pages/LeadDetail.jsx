@@ -185,7 +185,7 @@ export default function LeadDetail() {
       <div className="tabs" role="tablist">
         {[['timeline', 'Timeline'], ['followups', `Follow-ups (${followUps.length})`], ['survey', 'Survey'],
           ['send', 'Send Docs'], ['comms', 'Comms Log'],
-          ['selection', 'Selection Form'], ['cad', 'CAD'], ['quote', 'Quote'], ['files', `Files (${files.length})`], ['notes', 'Notes']]
+          ['selection', 'Selection Form'], ['cad', 'CAD'], ['files', `Files (${files.length})`], ['notes', 'Notes']]
           .map(([k, label]) => (
             <button key={k} className={tab === k ? 'on' : ''} onClick={() => setTab(k)}>{label}</button>
           ))}
@@ -198,7 +198,6 @@ export default function LeadDetail() {
       {tab === 'comms' && <CommsLog lead={lead} followUps={followUps} activity={activity} />}
       {tab === 'selection' && <Selection lead={lead} save={save} d={d} />}
       {tab === 'cad' && <Cad lead={lead} save={save} files={files} profile={profile} reload={load} notify={notify} />}
-      {tab === 'quote' && <Quote lead={lead} save={save} />}
       {tab === 'files' && <Files lead={lead} files={files} profile={profile} reload={load} notify={notify} />}
       {tab === 'notes' && <Notes lead={lead} save={save} />}
 
