@@ -2,6 +2,7 @@ import { useEffect, useState, createContext, useContext, useCallback } from 'rea
 import { BrowserRouter, Routes, Route, NavLink, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { supabase } from './lib/supabase'
 import { buildTodaysActions } from './lib/logic'
+import Notifications from './components/Notifications'
 
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
@@ -210,7 +211,10 @@ function Layout({ children }) {
           <button onClick={() => supabase.auth.signOut()} title="Log out" aria-label="Log out"><Icon name="logout" /></button>
         </div>
       </aside>
-      <main className="main"><div className="page-anim" key={loc.pathname}>{children}</div></main>
+      <main className="main">
+        <Notifications />
+        <div className="page-anim" key={loc.pathname}>{children}</div>
+      </main>
       <Spotlight />
 
       {/* Mobile bottom tab bar — 4 main destinations + More (full menu) */}
