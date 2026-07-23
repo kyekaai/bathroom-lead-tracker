@@ -1,11 +1,12 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase, logActivity } from '../lib/supabase'
 import { useApp } from '../App'
 import {
   STAGE_COLOR, PRIORITY_COLOR, derive, fmtDate, money, daysSince,
-  STAGES, PRE_SURVEY_STAGES, STAGE_TO_CAD, LOST_REASONS, today,
+  STAGES, PRE_SURVEY_STAGES, STAGE_TO_CAD, LOST_REASONS, today, healthScore, healthColor,
 } from '../lib/logic'
+import { fireConfetti } from '../lib/confetti'
 
 export function StageBadge({ stage }) {
   return <span className={`badge ${STAGE_COLOR[stage] || 'grey'}`}><span className={`dot ${STAGE_COLOR[stage] || 'grey'}`} />{stage}</span>
@@ -43,6 +44,7 @@ export function StageSelect({ lead }) {
     if (error) return notify('Could not move stage — ' + error.message)
     await logActivity(lead.id, 'stage', `Stage changed to ${stage}`, profile?.name)
     await refresh()
+    if (stage === 'Won') fireConfetti()
     notify(`${lead.customer_name} → ${stage} ✓`)
   }
 
@@ -134,6 +136,28 @@ export function QuickNote({ lead }) {
   )
 }
 
+// Health ring — one glance tells you how a lead is doing (green / amber / red)
+export function HealthRing({ lead }) {
+  const score = healthScore(lead)
+  const C = 2 * Math.PI * 18
+  const [off, setOff] = useState(C)
+  useEffect(() => {
+    const t = setTimeout(() => setOff(C - (C * score) / 100), 250)
+    return () => clearTimeout(t)
+  }, [score])
+  if (lead.stage === 'Won' || lead.stage === 'Lost') return null
+  return (
+    <div className="health" title={`Lead health ${score}/100 — based on chasing, response and idle time`}>
+      <svg width="44" height="44">
+        <circle className="track" cx="22" cy="22" r="18" />
+        <circle className="val" cx="22" cy="22" r="18" stroke={healthColor(score)}
+          strokeDasharray={C} strokeDashoffset={off} />
+      </svg>
+      <b>{score}</b>
+    </div>
+  )
+}
+
 export function LeadCard({ lead }) {
   const nav = useNavigate()
   const d = derive(lead)
@@ -141,9 +165,12 @@ export function LeadCard({ lead }) {
     <div className="card lead-card" onClick={() => nav(`/leads/${lead.id}`)} role="button" tabIndex={0}
       onKeyDown={e => e.key === 'Enter' && nav(`/leads/${lead.id}`)}>
       <div className="top">
-        <div>
-          <div className="name">{lead.customer_name}</div>
-          <div className="where">{[lead.address, lead.postcode].filter(Boolean).join(', ') || 'No address'}</div>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center', minWidth: 0 }}>
+          <HealthRing lead={lead} />
+          <div style={{ minWidth: 0 }}>
+            <div className="name">{lead.customer_name}</div>
+            <div className="where">{[lead.address, lead.postcode].filter(Boolean).join(', ') || 'No address'}</div>
+          </div>
         </div>
         <PriorityBadge priority={d.priority} />
       </div>
