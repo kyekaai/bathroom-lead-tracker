@@ -1098,7 +1098,8 @@ table.data tbody tr:hover td:first-child { box-shadow: inset 3px 0 0 var(--accen
   /* Hide the whole app, show only the job sheet */
   .sidebar, .tabbar, .bell, .notif-panel, .scrim, .toast,
   .page-head, .tabs, .quickbar, .journey, .card, .side-search,
-  .menu-btn, .spot-overlay, .welcome-banner { display: none !important; }
+  .menu-btn, .spot-overlay, .welcome-banner,
+  .danger-zone, .back-link, .btn, button { display: none !important; }
   body::before, body::after { display: none !important; }
 
   html, body { background: #fff !important; color: #111 !important; }
