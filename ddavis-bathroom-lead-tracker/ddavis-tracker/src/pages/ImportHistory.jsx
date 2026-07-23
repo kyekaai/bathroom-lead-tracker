@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { Empty } from '../components/ui'
+import { Empty, SkeletonRows } from '../components/ui'
 
 export default function ImportHistory() {
   const [rows, setRows] = useState(null)
@@ -14,7 +14,7 @@ export default function ImportHistory() {
       .then(({ data }) => setProfiles(Object.fromEntries((data || []).map(p => [p.id, p.name]))))
   }, [])
 
-  if (!rows) return <p className="muted">Loading…</p>
+  if (!rows) return <SkeletonRows n={4} />
 
   return (
     <>
