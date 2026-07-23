@@ -4,7 +4,7 @@ import { supabase, logActivity } from '../lib/supabase'
 import { useApp } from '../App'
 import {
   STAGE_COLOR, PRIORITY_COLOR, derive, fmtDate, money, daysSince,
-  STAGES, PRE_SURVEY_STAGES, STAGE_TO_CAD, LOST_REASONS, today, healthScore, healthColor,
+  STAGES, PRE_SURVEY_STAGES, STAGE_TO_CAD, LOST_REASONS, today, healthScore, healthColor, healthBreakdown,
 } from '../lib/logic'
 import { fireConfetti } from '../lib/confetti'
 
@@ -136,24 +136,37 @@ export function QuickNote({ lead }) {
   )
 }
 
-// Health ring — one glance tells you how a lead is doing (green / amber / red)
+// Health ring — one glance tells you how a lead is doing (green / amber / red).
+// Hover shows a tooltip explaining exactly why the score is what it is.
 export function HealthRing({ lead }) {
-  const score = healthScore(lead)
+  const { score, reasons } = healthBreakdown(lead)
   const C = 2 * Math.PI * 18
   const [off, setOff] = useState(C)
+  const [tip, setTip] = useState(false)
   useEffect(() => {
     const t = setTimeout(() => setOff(C - (C * score) / 100), 250)
     return () => clearTimeout(t)
   }, [score])
   if (lead.stage === 'Won' || lead.stage === 'Lost') return null
   return (
-    <div className="health" title={`Lead health ${score}/100 — based on chasing, response and idle time`}>
+    <div className="health" onMouseEnter={() => setTip(true)} onMouseLeave={() => setTip(false)}
+      onTouchStart={() => setTip(t => !t)}>
       <svg width="44" height="44">
         <circle className="track" cx="22" cy="22" r="18" />
         <circle className="val" cx="22" cy="22" r="18" stroke={healthColor(score)}
           strokeDasharray={C} strokeDashoffset={off} />
       </svg>
       <b>{score}</b>
+      {tip && (
+        <div className="health-tip" onClick={e => e.stopPropagation()}>
+          <div className="ht-head">Lead health — {score}/100</div>
+          {reasons.map((r, i) => (
+            <div key={i} className={`ht-row ${r.good ? 'good' : 'bad'}`}>
+              <span>{r.good ? '✓' : '✗'}</span>{r.label}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
