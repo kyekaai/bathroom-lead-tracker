@@ -122,7 +122,7 @@ export default function Dashboard() {
     <>
       {welcome && (
         <div className="welcome-banner">
-          <span>👋 Welcome{profile?.name ? `, ${profile.name.split(' ')[0]}` : ''}! The tracker gets regular upgrades — see what\u2019s changed on the <Link to="/whats-new">What\u2019s New</Link> page.</span>
+          <span>👋 Welcome{profile?.name ? `, ${profile.name.split(' ')[0]}` : ''}! The tracker gets regular upgrades — see what's changed on the <Link to="/whats-new">What's New</Link> page.</span>
           <button onClick={dismissWelcome} aria-label="Dismiss">✕</button>
         </div>
       )}
