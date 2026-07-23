@@ -10,7 +10,7 @@ import {
   derive, fmtDate, money, selectionBand, MAX_FOLLOW_UPS, today, stageAge, stampStage, timeAgo,
 } from '../lib/logic'
 
-const MAIN_STEPS = ['Enquiry', 'Survey', 'Selection Form', 'CAD', 'Quote', 'Won/Lost']
+const MAIN_STEPS = ['Enquiry', 'Survey', 'Selections', 'CAD Design', 'Approved', 'Won']
 function stepIndex(stage) {
   if (PRE_SURVEY_STAGES.includes(stage)) return 0
   if (stage === 'Survey Complete') return 1
@@ -140,12 +140,27 @@ export default function LeadDetail() {
             </div>
           </div>
 
-          <div className="stagebar" style={{ marginTop: 16 }} aria-label="Pipeline progress">
-            {MAIN_STEPS.map((s, i) => (
-              <div key={s} className={`step ${i < stepNow ? 'done' : ''} ${i === stepNow ? 'now' : ''}`}>
-                <div className="bar" /><span className="step-label">{i < stepNow ? '✓ ' : ''}{s}</span>
-              </div>
-            ))}
+          <div className="journey" style={{ marginTop: 18 }} aria-label="Pipeline progress">
+            {MAIN_STEPS.map((s, i) => {
+              const done = i < stepNow, now = i === stepNow
+              const sa = stageAge(lead)
+              const when = {
+                0: lead.created_at, 1: lead.survey_completed_date,
+                2: lead.selection_form_returned_date, 3: lead.cad_booked_date,
+                4: lead.cad_completed_date, 5: lead.stage === 'Won' || lead.stage === 'Lost' ? lead.stage_changed_at : null,
+              }[i]
+              return (
+                <div key={s} className={`jstep ${done ? 'done' : ''} ${now ? 'now' : ''}`}>
+                  <div className="jline" />
+                  <div className="jdot">{done ? '✓' : i + 1}</div>
+                  <div className="jlbl">{s}</div>
+                  <div className="jsub">
+                    {now && sa.days !== null ? `${sa.days} day${sa.days === 1 ? '' : 's'}`
+                      : when ? fmtDate(when) : '—'}
+                  </div>
+                </div>
+              )
+            })}
           </div>
 
           <div className="lead-card" style={{ padding: 0, cursor: 'default', boxShadow: 'none', border: 0 }}>
