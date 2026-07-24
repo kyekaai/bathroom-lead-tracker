@@ -733,8 +733,94 @@ function Cad({ lead, save, files, profile, reload, notify }) {
         <div className="field"><label>CAD notes</label><textarea rows="3" value={f.cad_notes} onChange={e => setF({ ...f, cad_notes: e.target.value })} /></div>
         <button className="btn gold">Save CAD</button>
       </div>
+      <CadRevisions lead={lead} save={save} profile={profile} />
       <CadFiles lead={lead} files={files} profile={profile} reload={reload} notify={notify} />
     </form>
+  )
+}
+
+/* ---------------- CAD revision log ---------------- */
+// What each revision actually asked for — so a job at rev 4 isn't a mystery.
+function CadRevisions({ lead, save, profile }) {
+  const list = Array.isArray(lead.cad_revisions) ? lead.cad_revisions : []
+  const [adding, setAdding] = useState(false)
+  const [f, setF] = useState({ requested: '', requested_date: today(), sent_date: '' })
+
+  function add(e) {
+    e.preventDefault(); e.stopPropagation()
+    const text = f.requested.trim()
+    if (!text) return
+    const next = [...list, {
+      n: list.length + 1, requested: text,
+      requested_date: f.requested_date || today(),
+      sent_date: f.sent_date || null, by: profile?.name || null,
+    }]
+    save({
+      cad_revisions: next,
+      cad_revision_count: next.length,
+      cad_status: 'revisions requested',
+      stage: 'CAD Revisions Required',
+    }, 'cad', `Revision ${next.length} logged: ${text}`)
+    setF({ requested: '', requested_date: today(), sent_date: '' })
+    setAdding(false)
+  }
+
+  function markSent(n) {
+    const next = list.map(r => r.n === n ? { ...r, sent_date: today() } : r)
+    save({ cad_revisions: next, cad_status: 'sent to customer', stage: 'CAD Sent' },
+      'cad', `Revision ${n} sent to customer`)
+  }
+
+  return (
+    <div className="card-body" style={{ borderTop: '1px solid var(--border)' }}>
+      <div className="fs-eyebrow">Revision log</div>
+      {list.length === 0 && !adding && <p className="muted small">No revisions yet.</p>}
+
+      {list.length > 0 && (
+        <div className="revlog">
+          {[...list].reverse().map(r => (
+            <div className="rev" key={r.n}>
+              <div className="revn">{r.n}</div>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div className="rev-what">{r.requested}</div>
+                <div className="rev-meta">
+                  Requested {fmtDate(r.requested_date)}
+                  {r.sent_date ? ` · sent ${fmtDate(r.sent_date)}` : ' · not sent yet'}
+                  {r.by ? ` · by ${r.by}` : ''}
+                </div>
+              </div>
+              {!r.sent_date &&
+                <button type="button" className="btn sm ghost" onClick={() => markSent(r.n)}>Mark sent</button>}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {adding ? (
+        <div className="revform">
+          <div className="field">
+            <label>What did the customer ask to change? <span className="req">*</span></label>
+            <textarea rows="2" autoFocus value={f.requested}
+              onChange={e => setF({ ...f, requested: e.target.value })}
+              placeholder="e.g. Move shower to the window wall, swap vanity to 800mm" />
+          </div>
+          <div className="form-grid">
+            <div className="field"><label>Requested on</label>
+              <input type="date" value={f.requested_date} onChange={e => setF({ ...f, requested_date: e.target.value })} /></div>
+            <div className="field"><label>Revised design sent (optional)</label>
+              <input type="date" value={f.sent_date} onChange={e => setF({ ...f, sent_date: e.target.value })} /></div>
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button type="button" className="btn sm gold" onClick={add} disabled={!f.requested.trim()}>Save revision</button>
+            <button type="button" className="btn sm ghost" onClick={() => setAdding(false)}>Cancel</button>
+          </div>
+        </div>
+      ) : (
+        <button type="button" className="btn sm gold" style={{ marginTop: 10 }} onClick={() => setAdding(true)}>
+          + Log a revision
+        </button>
+      )}
+    </div>
   )
 }
 
